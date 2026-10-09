@@ -575,4 +575,8 @@ app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
   if (process.env.RAILWAY_PUBLIC_DOMAIN) {
     const url = "https://" + process.env.RAILWAY_PUBLIC_DOMAIN + WEBHOOK_PATH;
-  
+    fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/setWebhook?url=" + url)
+      .then(() => console.log("Webhook set to " + url))
+      .catch((e) => console.log("webhook err", e.message));
+  }
+});
