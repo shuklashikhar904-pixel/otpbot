@@ -1,9 +1,18 @@
+import subprocess
+import sys
+
+try:
+    import telethon
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "telethon", "aiohttp"])
+
 import asyncio
 import aiohttp
 import json
 import os
 import re
 import random
+from urllib.parse import quote
 from datetime import datetime
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
@@ -22,6 +31,36 @@ CHANNELS = [
     {"user": "@trusteddealers_07", "link": "https://t.me/trusteddealers_07"}
 ]
 
+COUNTRIES = [
+    "India", "Myanmar", "USA", "UK", "Indonesia", "Philippines", "Vietnam",
+    "Bangladesh", "Pakistan", "Sri Lanka", "Nepal", "Nigeria", "Ghana",
+    "Kenya", "South Africa", "Egypt", "Morocco", "UAE", "Saudi Arabia",
+    "Turkey", "Iran", "Iraq", "Israel", "Russia", "Ukraine", "Poland",
+    "Germany", "France", "Spain", "Italy", "Portugal", "Netherlands",
+    "Belgium", "Sweden", "Norway", "Denmark", "Finland", "Ireland",
+    "Switzerland", "Austria", "Greece", "Czech Republic", "Romania",
+    "Hungary", "Bulgaria", "Serbia", "Croatia", "Thailand", "Malaysia",
+    "Singapore", "China", "Japan", "South Korea", "Taiwan", "Hong Kong",
+    "Australia", "New Zealand", "Canada", "Mexico", "Brazil", "Argentina",
+    "Chile", "Colombia", "Peru", "Venezuela", "Ecuador", "Bolivia",
+    "Paraguay", "Uruguay", "Cuba", "Dominican Republic", "Guatemala",
+    "Honduras", "El Salvador", "Nicaragua", "Costa Rica", "Panama",
+    "Jamaica", "Haiti", "Puerto Rico", "Afghanistan", "Albania",
+    "Algeria", "Angola", "Armenia", "Azerbaijan", "Bahrain", "Belarus",
+    "Benin", "Bhutan", "Botswana", "Burkina Faso", "Burundi", "Cambodia",
+    "Cameroon", "Chad", "Congo", "Cyprus", "Djibouti", "Estonia",
+    "Ethiopia", "Fiji", "Gabon", "Gambia", "Georgia", "Iceland",
+    "Ivory Coast", "Jordan", "Kazakhstan", "Kuwait", "Kyrgyzstan",
+    "Laos", "Latvia", "Lebanon", "Liberia", "Libya", "Lithuania",
+    "Luxembourg", "Madagascar", "Malawi", "Maldives", "Mali", "Malta",
+    "Mauritania", "Mauritius", "Moldova", "Mongolia", "Montenegro",
+    "Mozambique", "Namibia", "Oman", "Palestine", "Papua New Guinea",
+    "Qatar", "Rwanda", "Senegal", "Sierra Leone", "Slovakia", "Slovenia",
+    "Somalia", "Sudan", "Syria", "Tajikistan", "Tanzania", "Togo",
+    "Tunisia", "Turkmenistan", "Uganda", "Uzbekistan", "Yemen",
+    "Zambia", "Zimbabwe"
+]
+
 REF_BONUS = 0.40
 MIN_FUND = 15.00
 BONUS_AT = 400.00
@@ -29,8 +68,9 @@ BONUS_PCT = 10
 
 DB_FILE = "/home/container/db.json"
 SESS_FILE = "/home/container/sessions.txt"
-
 LINE = "\u2501" * 18
+
+LOGIN_CLIENTS = {}
 
 
 def load_db():
@@ -41,6 +81,8 @@ def load_db():
             d = json.load(f)
             if "giveaways" not in d:
                 d["giveaways"] = []
+            if "pending" not in d:
+                d["pending"] = []
             return d
     except Exception:
         return {"users": {}, "accounts": [], "pending": [], "giveaways": []}
@@ -61,13 +103,8 @@ def get_user(uid):
     uid = str(uid)
     if uid not in DB["users"]:
         DB["users"][uid] = {
-            "balance": 0.0,
-            "step": "menu",
-            "temp": {},
-            "refs": [],
-            "orders": [],
-            "wins": 0,
-            "attempts": {}
+            "balance": 0.0, "step": "menu", "temp": {},
+            "refs": [], "orders": [], "wins": 0, "attempts": {}
         }
     u = DB["users"][uid]
     if "wins" not in u:
@@ -97,11 +134,27 @@ async def send(cid, text, kb=None):
     await api("sendMessage", **p)
 
 
+async def send_photo(cid, photo_url, caption):
+    await api("sendPhoto", chat_id=cid, photo=photo_url, caption=caption, parse_mode="HTML")
+
+
+async def edit(cid, mid, text, kb=None):
+    p = {"chat_id": cid, "message_id": mid, "text": text, "parse_mode": "HTML"}
+    if kb:
+        p["reply_markup"] = json.dumps(kb)
+    await api("editMessageText", **p)
+
+
 async def member(chat_id, user_id):
     r = await api("getChatMember", chat_id=chat_id, user_id=user_id)
     if r.get("ok"):
         return r["result"].get("status", "left")
     return "left"
+
+
+def qr_url(amount):
+    upi = "upi://pay?pa=" + quote(UPI_ID) + "&pn=" + quote(UPI_NAME) + "&am=" + str(round(amount, 2)) + "&cu=INR"
+    return "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" + quote(upi)
 
 
 def user_kb():
@@ -119,6 +172,7 @@ def admin_kb():
         [{"text": "\u2795 Add Account"}, {"text": "\U0001F4CB List Accounts"}],
         [{"text": "\U0001F4B8 Pending"}, {"text": "\U0001F4CA Stats"}],
         [{"text": "\U0001F4B5 Add Balance"}, {"text": "\U0001F4B8 Deduct Balance"}],
+        [{"text": "\U0001F510 Login Session"}, {"text": "\U0001F4C1 Sessions"}],
         [{"text": "\U0001F381 Create Giveaway"}, {"text": "\U0001F4E3 Broadcast"}],
         [{"text": "\u2B05\uFE0F Back"}]
     ], "resize_keyboard": True}
@@ -137,8 +191,7 @@ async def deliver_otp(phone, otp):
     for a in DB["accounts"]:
         if a.get("phone") == phone and a.get("sold_to"):
             buyer = int(a["sold_to"])
-            t = "\U0001F4E9 <b>OTP RECEIVED</b>\n"
-            t += LINE + "\n\n"
+            t = "\U0001F4E9 <b>OTP RECEIVED</b>\n" + LINE + "\n\n"
             t += "\U0001F4F1 Number: <code>" + phone + "</code>\n"
             t += "\U0001F511 OTP: <code>" + otp + "</code>\n\n"
             t += "\u26A1 Enter it fast!"
@@ -156,7 +209,7 @@ async def deliver_otp(phone, otp):
 
 async def start_userbots():
     if not os.path.exists(SESS_FILE):
-        print("[userbot] no sessions")
+        print("[userbot] no sessions file")
         return
     with open(SESS_FILE) as f:
         lines = [l.strip() for l in f if l.strip() and "|" in l]
@@ -198,13 +251,10 @@ async def check_join(uid):
 async def join_msg(cid, name):
     rows = []
     for i, ch in enumerate(CHANNELS):
-        rows.append([{"text": "\U0001F4E2 Join Channel " + str(i+1), "url": ch["link"]}])
-    rows.append([{"text": "\u2705 Verify Join",
-                  "url": "https://t.me/" + BOT_USER + "?start=verify"}])
-    t = "\U0001F510 <b>Access Locked</b>\n"
-    t += LINE + "\n\n"
-    t += "Hey <b>" + name + "</b>,\n\n"
-    t += "Join both channels to unlock the bot.\n\n"
+        rows.append([{"text": "\U0001F4E2 Join " + str(i+1), "url": ch["link"]}])
+    rows.append([{"text": "\u2705 Verify", "url": "https://t.me/" + BOT_USER + "?start=verify"}])
+    t = "\U0001F510 <b>Access Locked</b>\n" + LINE + "\n\n"
+    t += "Hey <b>" + name + "</b>,\n\nJoin both channels to unlock.\n\n"
     t += "\U0001F449 Tap Join, then Verify."
     await send(cid, t, {"inline_keyboard": rows})
 
@@ -229,7 +279,146 @@ def math_question():
     return str(a) + " " + op + " " + str(b), ans
 
 
+def account_button_label(a):
+    return str(a.get("country", "")) + " - " + str(a.get("age", "Fresh")) + " - Rs" + str(a.get("price"))
+
+
+async def handle_callback(cq):
+    uid = cq["from"]["id"]
+    cid = cq["message"]["chat"]["id"]
+    mid = cq["message"]["message_id"]
+    data = cq.get("data", "")
+    u = get_user(uid)
+    kb = menu_kb(uid)
+
+    await api("answerCallbackQuery", callback_query_id=cq["id"])
+
+    if data == "menu":
+        await edit(cid, mid, "\u2728 Use the buttons below.", kb)
+        return
+
+    if data.startswith("acp_"):
+        if uid not in ADMIN_IDS:
+            return
+        pg = int(data.split("_")[1])
+        per_page = 6
+        total = len(COUNTRIES)
+        start = pg * per_page
+        end = min(start + per_page, total)
+        rows = []
+        for i in range(start, end, 2):
+            rows.append([{"text": c, "callback_data": "ac_" + c} for c in COUNTRIES[i:i+2]])
+        nav = []
+        if pg > 0:
+            nav.append({"text": "\u25C0 Prev", "callback_data": "acp_" + str(pg-1)})
+        if end < total:
+            nav.append({"text": "More \u25B6", "callback_data": "acp_" + str(pg+1)})
+        if nav:
+            rows.append(nav)
+        rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
+        await edit(cid, mid, "\u2795 <b>Add Account</b> \u2022 page " + str(pg+1) + "\n" + LINE + "\n\nTap the <b>country</b>:", {"inline_keyboard": rows})
+        return
+
+    if data.startswith("ac_"):
+        if uid not in ADMIN_IDS:
+            return
+        country = data.replace("ac_", "", 1)
+        u["step"] = "add_pending"
+        u["temp"] = {"add_country": country}
+        save_db()
+        t = "\U0001F30D <b>" + country + "</b>\n" + LINE + "\n\n"
+        t += "Send in ONE line separated by <b>|</b> :\n\n"
+        t += "<code>phone|age|2fa|price</code>\n\n"
+        t += "Example:\n<code>919999999999|Fresh|pass123|50</code>\n\n"
+        t += "Tags: Fresh / Rare / Old / 1 Year / 6 Months / anything"
+        await edit(cid, mid, t, admin_kb())
+        return
+
+    if data.startswith("cc_"):
+        country = data.replace("cc_", "", 1)
+        avail = [a for a in DB["accounts"] if not a.get("sold") and a.get("country") == country]
+        if not avail:
+            await edit(cid, mid, "\u274C No accounts left for " + country, kb)
+            return
+        rows = []
+        for a in avail:
+            rows.append([{"text": account_button_label(a), "callback_data": "buy_" + str(a["id"])}])
+        rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
+        t = "<b>" + country + "</b>\n" + LINE + "\n\nTap an account to buy:"
+        await edit(cid, mid, t, {"inline_keyboard": rows})
+        return
+
+    if data.startswith("buy_"):
+        acc_id = int(data.replace("buy_", ""))
+        acc = next((a for a in DB["accounts"] if a["id"] == acc_id and not a.get("sold")), None)
+        if not acc:
+            await edit(cid, mid, "\u274C Not available.", kb)
+            return
+        if u["balance"] < acc.get("price", 0):
+            t = "\u26A0\uFE0F <b>Low Balance</b>\n" + LINE + "\n\n"
+            t += "Price: Rs" + str(acc["price"]) + "\n"
+            t += "Balance: Rs" + str(round(u["balance"], 2)) + "\n\nTap Add Funds"
+            await edit(cid, mid, t, kb)
+            return
+        u["step"] = "confirm_" + str(acc_id)
+        save_db()
+        t = "\U0001F6D2 <b>Confirm Purchase</b>\n" + LINE + "\n\n"
+        t += "Country: " + str(acc.get("country")) + "\n"
+        t += "Age: " + str(acc.get("age", "Fresh")) + "\n"
+        t += "Price: Rs" + str(acc.get("price")) + "\n\n"
+        t += "Reply <b>YES</b> or <b>NO</b>"
+        await edit(cid, mid, t, kb)
+        return
+
+    if data.startswith("approve_"):
+        if uid not in ADMIN_IDS:
+            return
+        idx = int(data.split("_")[1])
+        if idx < 0 or idx >= len(DB["pending"]):
+            await edit(cid, mid, "\u274C Item gone.", admin_kb())
+            return
+        item = DB["pending"].pop(idx)
+        buyer = get_user(item["uid"])
+        bonus = 0
+        if item["amount"] >= BONUS_AT:
+            bonus = item["amount"] * BONUS_PCT / 100
+        buyer["balance"] += item["amount"] + bonus
+        save_db()
+        try:
+            t = "\u2705 <b>Approved</b>\n" + LINE + "\n\n"
+            t += "Rs" + str(item["amount"])
+            if bonus:
+                t += " + Rs" + str(round(bonus, 2)) + " bonus"
+            t += "\n\nNew balance Rs" + str(round(buyer["balance"], 2))
+            await send(item["uid"], t)
+        except Exception:
+            pass
+        await edit(cid, mid, "\u2705 Approved Rs" + str(item["amount"]), admin_kb())
+        return
+
+    if data.startswith("reject_"):
+        if uid not in ADMIN_IDS:
+            return
+        idx = int(data.split("_")[1])
+        if idx < 0 or idx >= len(DB["pending"]):
+            await edit(cid, mid, "\u274C Item gone.", admin_kb())
+            return
+        item = DB["pending"].pop(idx)
+        save_db()
+        try:
+            await send(item["uid"], "\u274C Rejected. Contact " + SUPPORT)
+        except Exception:
+            pass
+        await edit(cid, mid, "\u274C Rejected.", admin_kb())
+        return
+
+
 async def handle(update):
+    cq = update.get("callback_query")
+    if cq:
+        await handle_callback(cq)
+        return
+
     msg = update.get("message")
     if not msg:
         return
@@ -239,6 +428,7 @@ async def handle(update):
     cid = chat.get("id", uid)
     fname = user.get("first_name", "user")
     text = msg.get("text", "")
+    photo = msg.get("photo")
     cmd = text.split("@")[0].strip()
     low = cmd.lower()
 
@@ -263,103 +453,48 @@ async def handle(update):
                 ref_u["balance"] += REF_BONUS
                 save_db()
                 try:
-                    await send(ref_id, "\U0001F381 New referral! +Rs" + str(REF_BONUS))
+                    await send(ref_id, "\U0001F381 New referral +Rs" + str(REF_BONUS))
                 except Exception:
                     pass
 
-    if low in ("/start", "/menu", "/cancel", "back", ""):
+    if low in ("/start", "/menu", "/cancel", "back", "") or low == "\u2b05\ufe0f back":
         u["step"] = "menu"
         u["temp"] = {}
         save_db()
         if is_admin:
             stock = len([a for a in DB["accounts"] if not a.get("sold")])
-            t = "\U0001F510 <b>ADMIN CONSOLE</b>\n"
-            t += LINE + "\n\n"
-            t += "\U0001F4E6 Stock: <b>" + str(stock) + "</b>\n"
-            t += "\U0001F465 Users: <b>" + str(len(DB["users"])) + "</b>\n"
-            t += "\U0001F4B8 Pending: <b>" + str(len(DB["pending"])) + "</b>\n"
-            t += "\U0001F381 Giveaways: <b>" + str(len([g for g in DB["giveaways"] if g.get("active")])) + "</b>\n\n"
-            t += "\u2728 Choose an option below"
+            t = "\U0001F510 <b>ADMIN CONSOLE</b>\n" + LINE + "\n\n"
+            t += "Stock <b>" + str(stock) + "</b>\n"
+            t += "Users <b>" + str(len(DB["users"])) + "</b>\n"
+            t += "Pending <b>" + str(len(DB["pending"])) + "</b>\n\n"
+            t += "\u2728 Choose an option"
             await send(cid, t, kb)
         else:
-            t = "\U0001F48E <b>PREMIUM TG STORE</b>\n"
-            t += LINE + "\n\n"
-            t += "\U0001F44B Welcome, <b>" + fname + "</b>\n\n"
-            t += "\U0001F194 ID: <code>" + str(uid) + "</code>\n"
-            t += "\U0001F4B0 Balance: <b>Rs" + str(round(u["balance"], 2)) + "</b>\n"
-            t += "\U0001F3C6 Wins: <b>" + str(u["wins"]) + "</b>\n\n"
-            t += "\u2728 Choose an option below"
+            t = "\U0001F48E <b>PREMIUM TG STORE</b>\n" + LINE + "\n\n"
+            t += "\U0001F44B Welcome <b>" + fname + "</b>\n\n"
+            t += "ID <code>" + str(uid) + "</code>\n"
+            t += "Balance <b>Rs" + str(round(u["balance"], 2)) + "</b>\n"
+            t += "Wins <b>" + str(u["wins"]) + "</b>\n\n"
+            t += "\u2728 Choose an option"
             await send(cid, t, kb)
         return
 
-    if low == "buy account" or low == "\U0001F6D2 buy account":
+    if low in ("buy account", "\U0001F6D2 buy account"):
         avail = [a for a in DB["accounts"] if not a.get("sold")]
         if not avail:
-            await send(cid, "\u274C No accounts in stock right now.", kb)
+            await send(cid, "\u274C No accounts in stock.", kb)
             return
         countries = sorted(set(a.get("country", "Unknown") for a in avail))
-        u["step"] = "buy_country"
-        u["temp"] = {"countries": countries}
-        save_db()
-        t = "\U0001F30D <b>Choose Country</b>\n" + LINE + "\n\n"
-        for i, c in enumerate(countries):
+        rows = []
+        for c in countries:
             cnt = len([a for a in avail if a.get("country") == c])
-            t += str(i+1) + ". " + c + " <i>(" + str(cnt) + ")</i>\n"
-        t += "\n\u270F\uFE0F Reply with the number"
-        await send(cid, t, kb)
+            rows.append([{"text": c + " (" + str(cnt) + ")", "callback_data": "cc_" + c}])
+        rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
+        await send(cid, "Choose Country\n" + LINE + "\n\nTap a country:", {"inline_keyboard": rows})
         return
 
-    if u["step"] == "buy_country":
-        try:
-            country = u["temp"]["countries"][int(cmd) - 1]
-        except Exception:
-            await send(cid, "\u274C Invalid. Reply with a number.", kb)
-            return
-        avail = [a for a in DB["accounts"] if not a.get("sold") and a.get("country") == country]
-        u["step"] = "buy_pick"
-        u["temp"]["filtered"] = [a["id"] for a in avail]
-        save_db()
-        t = "\U0001F4F1 <b>" + country + "</b>\n" + LINE + "\n\n"
-        for i, a in enumerate(avail):
-            t += str(i+1) + ". <b>" + a.get("age", "Fresh") + "</b> \u2014 Rs" + str(a.get("price", 0)) + "\n"
-        t += "\n\u270F\uFE0F Reply with the number"
-        await send(cid, t, kb)
-        return
-
-    if u["step"] == "buy_pick":
-        try:
-            acc_id = u["temp"]["filtered"][int(cmd) - 1]
-        except Exception:
-            await send(cid, "\u274C Invalid.", kb)
-            return
-        acc = next((a for a in DB["accounts"] if a["id"] == acc_id and not a.get("sold")), None)
-        if not acc:
-            u["step"] = "menu"
-            save_db()
-            await send(cid, "\u274C Not available.", kb)
-            return
-        if u["balance"] < acc.get("price", 0):
-            u["step"] = "menu"
-            save_db()
-            t = "\u26A0\uFE0F <b>Insufficient Balance</b>\n"
-            t += LINE + "\n\n"
-            t += "Price: Rs" + str(acc["price"]) + "\n"
-            t += "Balance: Rs" + str(round(u["balance"], 2)) + "\n\n"
-            t += "\U0001F4B0 Tap Add Funds"
-            await send(cid, t, kb)
-            return
-        u["step"] = "buy_confirm"
-        u["temp"]["acc_id"] = acc_id
-        save_db()
-        t = "\U0001F6D2 <b>Confirm Purchase</b>\n" + LINE + "\n\n"
-        t += "\U0001F30D " + str(acc.get("country")) + "\n"
-        t += "\U0001F4C5 " + str(acc.get("age", "Fresh")) + "\n"
-        t += "\U0001F4B0 Rs" + str(acc["price"]) + "\n\n"
-        t += "Reply <b>YES</b> or <b>NO</b>"
-        await send(cid, t, kb)
-        return
-
-    if u["step"] == "buy_confirm":
+    if u["step"].startswith("confirm_"):
+        acc_id = int(u["step"].replace("confirm_", ""))
         ans = cmd.upper()
         if ans in ("NO", "N", "CANCEL"):
             u["step"] = "menu"
@@ -369,7 +504,7 @@ async def handle(update):
         if ans not in ("YES", "Y"):
             await send(cid, "Reply YES or NO.", kb)
             return
-        acc = next((x for x in DB["accounts"] if x["id"] == u["temp"]["acc_id"] and not x.get("sold")), None)
+        acc = next((x for x in DB["accounts"] if x["id"] == acc_id and not x.get("sold")), None)
         if not acc:
             u["step"] = "menu"
             save_db()
@@ -386,29 +521,28 @@ async def handle(update):
         u["orders"].append({"acc_id": acc["id"], "phone": acc.get("phone")})
         u["step"] = "menu"
         save_db()
-        t = "\u2705 <b>PURCHASE SUCCESS</b>\n"
-        t += LINE + "\n\n"
-        t += "\U0001F4F1 Phone: <code>" + str(acc.get("phone")) + "</code>\n"
-        t += "\U0001F510 2FA: <code>" + str(acc.get("twofa", "none")) + "</code>\n\n"
-        t += "<b>\U0001F4D6 How to Login</b>\n"
-        t += "1\uFE0F\u20E3 Open Telegram\n"
-        t += "2\uFE0F\u20E3 Log in with the phone\n"
-        t += "3\uFE0F\u20E3 OTP arrives here automatically\n"
-        t += "4\uFE0F\u20E3 Enter 2FA if asked\n\n"
-        t += "\U0001F198 Support: " + SUPPORT
+        t = "\u2705 <b>PURCHASED</b>\n" + LINE + "\n\n"
+        t += "Phone <code>" + str(acc.get("phone")) + "</code>\n"
+        t += "2FA <code>" + str(acc.get("twofa", "none")) + "</code>\n\n"
+        t += "<b>How to Login</b>\n"
+        t += "1. Open Telegram\n"
+        t += "2. Log in with the phone above\n"
+        t += "3. OTP arrives in this chat\n"
+        t += "4. Enter 2FA when asked\n\n"
+        t += "Support: " + SUPPORT
         await send(cid, t, kb)
         for adm in ADMIN_IDS:
             try:
-                await send(adm, "\U0001F6D2 Sale! User <code>" + str(uid) + "</code>\nPhone " + str(acc.get("phone")) + "\nRs" + str(acc["price"]))
+                await send(adm, "Sale " + str(uid) + " bought " + str(acc.get("phone")))
             except Exception:
                 pass
         return
 
     if low in ("my orders", "\U0001F4E6 my orders"):
         if not u["orders"]:
-            await send(cid, "\U0001F4ED No orders yet.", kb)
+            await send(cid, "No orders yet.", kb)
             return
-        t = "\U0001F4E6 <b>Your Orders</b>\n" + LINE + "\n\n"
+        t = "<b>Your Orders</b>\n" + LINE + "\n\n"
         for i, o in enumerate(u["orders"]):
             t += str(i+1) + ". <code>" + str(o.get("phone")) + "</code>\n"
         await send(cid, t, kb)
@@ -417,23 +551,22 @@ async def handle(update):
     if low in ("add funds", "\U0001F4B0 add funds"):
         u["step"] = "fund_amount"
         save_db()
-        t = "\U0001F4B0 <b>Add Funds</b>\n" + LINE + "\n\n"
-        t += "\U0001F4CA Min: Rs" + str(MIN_FUND) + "\n"
-        t += "\U0001F381 Bonus: " + str(BONUS_PCT) + "% above Rs" + str(int(BONUS_AT)) + "\n\n"
-        t += "\U0001F4B3 UPI: <code>" + UPI_ID + "</code>\n"
-        t += "\U0001F464 Name: " + UPI_NAME + "\n\n"
-        t += "\u270F\uFE0F Send amount in rupees"
+        t = "Add Funds\n" + LINE + "\n\n"
+        t += "Minimum Rs" + str(int(MIN_FUND)) + "\n"
+        t += "Bonus " + str(BONUS_PCT) + "% above Rs" + str(int(BONUS_AT)) + "\n\n"
+        t += "Send the amount you want to add.\nExample: <code>100</code>"
         await send(cid, t, kb)
         return
 
     if u["step"] == "fund_amount":
         try:
-            amt = float(cmd)
+            amt = float(cmd.replace("Rs", "").replace("rs", "").replace("\u20B9", "").strip())
         except Exception:
-            await send(cid, "\u274C Invalid amount.", kb)
-            return
+            await send(cid, "Send a number only. Example: 100", kb)
+                        return
+
         if amt < MIN_FUND:
-            await send(cid, "\u274C Min Rs" + str(MIN_FUND), kb)
+            await send(cid, "Minimum is Rs" + str(int(MIN_FUND)), kb)
             return
         u["step"] = "fund_utr"
         u["temp"]["amt"] = amt
@@ -441,55 +574,68 @@ async def handle(update):
         preview = ""
         if amt >= BONUS_AT:
             b = amt * BONUS_PCT / 100
-            preview = "\n\U0001F381 Bonus: +Rs" + str(round(b, 2)) + " \u2192 total Rs" + str(round(amt + b, 2))
-        t = "\U0001F4B0 <b>Amount: Rs" + str(round(amt, 2)) + "</b>"
-        t += preview + "\n" + LINE + "\n\n"
-        t += "\U0001F4B3 Pay to UPI: <code>" + UPI_ID + "</code>\n"
-        t += "\U0001F464 Name: " + UPI_NAME + "\n\n"
-        t += "After paying, send the <b>UTR</b> here"
+            preview = "\n+" + str(round(b, 2)) + " bonus -> total Rs" + str(round(amt + b, 2))
+        cap = "Pay Rs" + str(round(amt, 2)) + " to " + UPI_ID
+        try:
+            await send_photo(cid, qr_url(amt), cap)
+        except Exception:
+            pass
+        t = "Pay Rs" + str(round(amt, 2)) + preview + "\n" + LINE + "\n\n"
+        t += "UPI ID: <code>" + UPI_ID + "</code>\n"
+        t += "Name: " + UPI_NAME + "\n\n"
+        t += "Scan QR above or pay to UPI ID.\n\n"
+        t += "After paying, send the UTR number here.\nYou can also send a screenshot."
         await send(cid, t, kb)
         return
 
     if u["step"] == "fund_utr":
+        if not cmd and not photo:
+            await send(cid, "Send UTR text or screenshot.", kb)
+            return
+        if photo and cmd:
+            proof = cmd + " (+screenshot)"
+        elif photo:
+            proof = "screenshot only"
+        else:
+            proof = cmd
         DB["pending"].append({
-            "uid": uid,
-            "amount": u["temp"]["amt"],
-            "proof": cmd,
+            "uid": uid, "amount": u["temp"]["amt"],
+            "proof": proof,
             "time": datetime.now().strftime("%Y-%m-%d %H:%M")
         })
         u["step"] = "menu"
         save_db()
-        t = "\u2705 <b>Submitted!</b>\n" + LINE + "\n\n"
-        t += "Admin will verify and credit you soon."
-        await send(cid, t, kb)
+        await send(cid, "Submitted! Admin will verify soon.", kb)
+        idx = len(DB["pending"]) - 1
         for adm in ADMIN_IDS:
             try:
-                t = "\U0001F4B8 <b>NEW CLAIM</b>\n"
-                t += LINE + "\n\n"
-                t += "\U0001F194 User: <code>" + str(uid) + "</code>\n"
-                t += "\U0001F4B0 Rs" + str(u["temp"]["amt"]) + "\n"
-                t += "\U0001F9FE UTR: " + cmd
-                await send(adm, t)
+                t = "NEW CLAIM\n" + LINE + "\n\n"
+                t += "User <code>" + str(uid) + "</code>\n"
+                t += "Rs" + str(u["temp"]["amt"]) + "\n"
+                t += proof
+                rows = [[
+                    {"text": "\u2705 Approve", "callback_data": "approve_" + str(idx)},
+                    {"text": "\u274C Reject", "callback_data": "reject_" + str(idx)}
+                ]]
+                await send(adm, t, {"inline_keyboard": rows})
             except Exception:
                 pass
         return
 
     if low in ("profile", "\U0001F464 profile"):
-        t = "\U0001F464 <b>Profile</b>\n" + LINE + "\n\n"
-        t += "\U0001F194 ID: <code>" + str(uid) + "</code>\n"
-        t += "\U0001F4B0 Balance: Rs" + str(round(u["balance"], 2)) + "\n"
-        t += "\U0001F4E6 Orders: " + str(len(u["orders"])) + "\n"
-        t += "\U0001F465 Refs: " + str(len(u["refs"])) + "\n"
-        t += "\U0001F3C6 Wins: " + str(u["wins"]) + "\n\n"
-        t += "\U0001F517 https://t.me/" + BOT_USER + "?start=ref_" + str(uid)
+        t = "Profile\n" + LINE + "\n\n"
+        t += "<code>" + str(uid) + "</code>\n"
+        t += "Balance Rs" + str(round(u["balance"], 2)) + "\n"
+        t += "Orders " + str(len(u["orders"])) + "\n"
+        t += "Refs " + str(len(u["refs"])) + "\n"
+        t += "Wins " + str(u["wins"]) + "\n\n"
+        t += "https://t.me/" + BOT_USER + "?start=ref_" + str(uid)
         await send(cid, t, kb)
         return
 
     if low in ("earn", "earn 5%", "\U0001F3AF earn 5%"):
-        t = "\U0001F3AF <b>Earn 5%</b>\n" + LINE + "\n\n"
-        t += "Invite friends and earn <b>5%</b> of their first deposit!\n\n"
-        t += "Plus Rs" + str(REF_BONUS) + " per signup\n\n"
-        t += "\U0001F517 Your link:\n"
+        t = "Earn 5%\n" + LINE + "\n\n"
+        t += "Invite friends, earn 5% of their first deposit.\n\n"
         t += "https://t.me/" + BOT_USER + "?start=ref_" + str(uid)
         await send(cid, t, kb)
         return
@@ -497,21 +643,20 @@ async def handle(update):
     if low in ("giveaway", "\U0001F381 giveaway"):
         g = current_giveaway()
         if not g:
-            await send(cid, "\U0001F614 No giveaway active right now.\n\nCome back later!", kb)
+            await send(cid, "No giveaway active.", kb)
             return
         if u["attempts"].get(str(g["id"])):
-            await send(cid, "\u274C You already tried this giveaway.\n\nOne chance only!", kb)
+            await send(cid, "One chance only!", kb)
             return
         q, ans = math_question()
         u["temp"]["ga_ans"] = ans
         u["temp"]["ga_id"] = g["id"]
         u["step"] = "ga_answer"
         save_db()
-        t = "\U0001F381 <b>GIVEAWAY CHALLENGE</b>\n" + LINE + "\n\n"
-        t += "\U0001F4B0 Prize: <b>Rs" + str(g["prize"]) + "</b>\n\n"
-        t += "\U0001F9E0 Solve:\n"
+        t = "GIVEAWAY\n" + LINE + "\n\n"
+        t += "Prize Rs" + str(g["prize"]) + "\n\n"
         t += "<b>" + q + " = ?</b>\n\n"
-        t += "\u26A0\uFE0F One wrong answer = miss"
+        t += "One wrong = miss"
         await send(cid, t, kb)
         return
 
@@ -520,104 +665,106 @@ async def handle(update):
         if not g or not g.get("active"):
             u["step"] = "menu"
             save_db()
-            await send(cid, "\u274C Giveaway ended.", kb)
+            await send(cid, "Giveaway ended.", kb)
             return
         if u["attempts"].get(str(g["id"])):
             u["step"] = "menu"
             save_db()
-            await send(cid, "\u274C Already tried.", kb)
+            await send(cid, "Already tried.", kb)
             return
         try:
-            user_ans = int(cmd.strip())
+            ans_int = int(cmd.strip())
         except Exception:
             await send(cid, "Reply with a number.", kb)
             return
         u["attempts"][str(g["id"])] = True
-        if user_ans == u["temp"]["ga_ans"]:
+        if ans_int == u["temp"]["ga_ans"]:
             u["balance"] += g["prize"]
             u["wins"] += 1
             u["step"] = "menu"
             save_db()
-            t = "\U0001F3C6 <b>CORRECT!</b>\n" + LINE + "\n\n"
-            t += "\U0001F4B0 You won <b>Rs" + str(g["prize"]) + "</b>!\n\n"
-            t += "New Balance: Rs" + str(round(u["balance"], 2))
+            t = "CORRECT!\n" + LINE + "\n\n"
+            t += "Won Rs" + str(g["prize"]) + "\n\n"
+            t += "New balance Rs" + str(round(u["balance"], 2))
             await send(cid, t, kb)
-            for adm in ADMIN_IDS:
-                try:
-                    await send(adm, "\U0001F3C6 " + str(uid) + " won Rs" + str(g["prize"]))
-                except Exception:
-                    pass
         else:
             u["step"] = "menu"
             save_db()
-            t = "\u274C <b>WRONG ANSWER</b>\n" + LINE + "\n\n"
-            t += "Correct was: <b>" + str(u["temp"]["ga_ans"]) + "</b>\n\n"
-            t += "Better luck next time \U0001F614"
+            t = "WRONG\n" + LINE + "\n\n"
+            t += "Correct was <b>" + str(u["temp"]["ga_ans"]) + "</b>"
             await send(cid, t, kb)
         return
 
     if low in ("guide", "\U0001F4D6 guide"):
-        t = "\U0001F4D6 <b>Guide</b>\n" + LINE + "\n\n"
-        t += "1\uFE0F\u20E3 Add funds via UPI\n"
-        t += "2\uFE0F\u20E3 Buy Account\n"
-        t += "3\uFE0F\u20E3 Get phone + 2FA\n"
-        t += "4\uFE0F\u20E3 Log in Telegram\n"
-        t += "5\uFE0F\u20E3 OTP arrives here automatically\n\n"
-        t += "\U0001F198 Support: " + SUPPORT
+        t = "Guide\n" + LINE + "\n\n"
+        t += "1. Add funds via UPI QR\n"
+        t += "2. Buy Account\n"
+        t += "3. Get phone + 2FA after payment\n"
+        t += "4. Log in Telegram\n"
+        t += "5. OTP arrives here automatically\n\n"
+        t += "Support: " + SUPPORT
         await send(cid, t, kb)
         return
 
     if low in ("support", "\U0001F198 support"):
-        await send(cid, "\U0001F198 Contact: " + SUPPORT, kb)
+        await send(cid, "Contact " + SUPPORT, kb)
         return
 
     if low in ("channel", "\U0001F4E2 channel"):
-        links = "\n".join("\U0001F4E2 " + ch["link"] for ch in CHANNELS)
-        await send(cid, "<b>Channels</b>\n" + LINE + "\n\n" + links, kb)
+        links = "\n".join(ch["link"] for ch in CHANNELS)
+        await send(cid, "Channels\n" + LINE + "\n\n" + links, kb)
         return
 
     if is_admin:
 
         if low in ("add account", "\u2795 add account"):
-            u["step"] = "add_one"
-            save_db()
-            t = "\u2795 <b>Add Account</b>\n" + LINE + "\n\n"
-            t += "Send in ONE line separated by | :\n\n"
-            t += "<code>phone|country|age|2fa|price</code>\n\n"
-            t += "\U0001F4DD Example:\n"
-            t += "<code>919999999999|India|Fresh|pass123|50</code>\n\n"
-            t += "Use <code>none</code> for no 2FA"
-            await send(cid, t, admin_kb())
+            per_page = 6
+            total = len(COUNTRIES)
+            start = 0
+            end = min(per_page, total)
+            rows = []
+            for i in range(start, end, 2):
+                rows.append([{"text": c, "callback_data": "ac_" + c} for c in COUNTRIES[i:i+2]])
+            nav = []
+            if end < total:
+                nav.append({"text": "More \u25B6", "callback_data": "acp_1"})
+            if nav:
+                rows.append(nav)
+            rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
+            await send(cid, "Add Account\n" + LINE + "\n\nTap the country:", {"inline_keyboard": rows})
             return
 
-        if u["step"] == "add_one":
+        if u["step"] == "add_pending":
+            country = u["temp"].get("add_country", "Unknown")
             parts = cmd.split("|")
-            if len(parts) != 5:
-                await send(cid, "\u274C Wrong format.", admin_kb())
+            if len(parts) != 4:
+                t = "Wrong format.\n\nSend: <code>phone|age|2fa|price</code>\n\nExample: <code>919999999999|Fresh|pass123|50</code>"
+                await send(cid, t, admin_kb())
                 return
             try:
-                price = float(parts[4].strip())
+                price = float(parts[3].strip())
             except Exception:
-                await send(cid, "\u274C Invalid price.", admin_kb())
+                await send(cid, "Invalid price.", admin_kb())
                 return
             DB["accounts"].append({
                 "id": len(DB["accounts"]) + 1,
                 "phone": parts[0].strip(),
-                "country": parts[1].strip(),
-                "age": parts[2].strip(),
-                "twofa": parts[3].strip(),
+                "country": country,
+                "age": parts[1].strip(),
+                "twofa": parts[2].strip(),
                 "price": price,
                 "sold": False,
                 "sold_to": None
             })
             u["step"] = "menu"
+            u["temp"] = {}
             save_db()
-            t = "\u2705 <b>Account Added!</b>\n" + LINE + "\n\n"
-            t += "\U0001F4F1 " + parts[0].strip() + "\n"
-            t += "\U0001F30D " + parts[1].strip() + "\n"
-            t += "\U0001F4C5 " + parts[2].strip() + "\n"
-            t += "\U0001F510 " + parts[3].strip() + "\n"
-            t += "\U0001F4B0 Rs" + str(price)
+            t = "Added\n" + LINE + "\n\n"
+            t += country + "\n"
+            t += parts[0].strip() + "\n"
+            t += parts[1].strip() + "\n"
+            t += parts[2].strip() + "\n"
+            t += "Rs" + str(price)
             await send(cid, t, admin_kb())
             return
 
@@ -625,10 +772,10 @@ async def handle(update):
             if not DB["accounts"]:
                 await send(cid, "No accounts.", admin_kb())
                 return
-            t = "\U0001F4CB <b>Accounts</b>\n" + LINE + "\n\n"
+            t = "Accounts\n" + LINE + "\n\n"
             for a in DB["accounts"][-30:]:
-                s = "\U0001F534" if a.get("sold") else "\U0001F7E2"
-                t += s + " #" + str(a["id"]) + " " + str(a.get("phone")) + " Rs" + str(a.get("price")) + "\n"
+                s = "SOLD" if a.get("sold") else "OK"
+                t += "#" + str(a["id"]) + " " + str(a.get("country")) + " " + str(a.get("phone")) + " Rs" + str(a.get("price")) + " " + s + "\n"
             await send(cid, t, admin_kb())
             return
 
@@ -636,81 +783,144 @@ async def handle(update):
             if not DB["pending"]:
                 await send(cid, "No pending.", admin_kb())
                 return
-            t = "\U0001F4B8 <b>Pending Payments</b>\n" + LINE + "\n\n"
             for i, p in enumerate(DB["pending"]):
-                t += "[" + str(i+1) + "] <code>" + str(p["uid"]) + "</code>\n"
-                t += "    Rs" + str(p["amount"]) + " \u2022 " + str(p["proof"]) + "\n\n"
-            t += "Reply <b>OK 1</b> to approve, <b>NO 1</b> to reject"
-            u["step"] = "pend_act"
-            save_db()
-            await send(cid, t, admin_kb())
+                t = "CLAIM #" + str(i+1) + "\n" + LINE + "\n\n"
+                t += "<code>" + str(p["uid"]) + "</code>\n"
+                t += "Rs" + str(p["amount"]) + "\n"
+                t += str(p["proof"]) + "\n"
+                t += str(p["time"])
+                rows = [[
+                    {"text": "\u2705 Approve", "callback_data": "approve_" + str(i)},
+                    {"text": "\u274C Reject", "callback_data": "reject_" + str(i)}
+                ]]
+                await send(cid, t, {"inline_keyboard": rows})
             return
 
-        if u["step"] == "pend_act":
-            m = re.match(r"^(OK|NO)\s+(\d+)$", cmd, re.I)
-            if not m:
-                await send(cid, "Reply OK 1 or NO 1.", admin_kb())
+        if low in ("login session", "\U0001F510 login session"):
+            u["step"] = "login_phone"
+            save_db()
+            await send(cid, "Login Session\n" + LINE + "\n\nSend phone number (with country code, no +).\nExample: <code>919876543210</code>", admin_kb())
+            return
+
+        if u["step"] == "login_phone":
+            phone = cmd.strip()
+            try:
+                client = TelegramClient(StringSession(), API_ID, API_HASH)
+                await client.connect()
+                sent = await client.send_code_request(phone)
+                LOGIN_CLIENTS[str(uid)] = {"phone": phone, "client": client, "hash": sent.phone_code_hash}
+                u["step"] = "login_code"
+                save_db()
+                await send(cid, "Code sent to Telegram app.\n\nSend the login code here.", admin_kb())
+            except Exception as e:
+                u["step"] = "menu"
+                save_db()
+                await send(cid, "Error: " + str(e), admin_kb())
+            return
+
+        if u["step"] == "login_code":
+            info = LOGIN_CLIENTS.get(str(uid))
+            if not info:
+                u["step"] = "menu"
+                save_db()
+                await send(cid, "Lost. Start over.", admin_kb())
                 return
-            act = m.group(1).upper()
-            idx = int(m.group(2)) - 1
-            if idx < 0 or idx >= len(DB["pending"]):
-                await send(cid, "Bad index.", admin_kb())
+            code = cmd.strip()
+            try:
+                await info["client"].sign_in(phone=info["phone"], code=code, phone_code_hash=info["hash"])
+                me = await info["client"].get_me()
+                sstr = info["client"].session.save()
+                with open(SESS_FILE, "a") as f:
+                    f.write(info["phone"] + "|" + sstr + "\n")
+                await info["client"].disconnect()
+                LOGIN_CLIENTS.pop(str(uid), None)
+                u["step"] = "menu"
+                save_db()
+                await send(cid, "Logged in as " + (me.first_name or "?") + "\nSession saved!\n\nRestart the server to activate.", admin_kb())
+            except Exception as e:
+                err = str(e)
+                if "password" in err.lower() or "SessionPasswordNeeded" in err:
+                    u["step"] = "login_2fa"
+                    save_db()
+                    await send(cid, "2FA enabled.\n\nSend your 2FA password.", admin_kb())
+                else:
+                    u["step"] = "menu"
+                    save_db()
+                    try:
+                        await info["client"].disconnect()
+                    except Exception:
+                        pass
+                    LOGIN_CLIENTS.pop(str(uid), None)
+                    await send(cid, "Error: " + err + "\n\nTry again with Login Session.", admin_kb())
+            return
+
+        if u["step"] == "login_2fa":
+            info = LOGIN_CLIENTS.get(str(uid))
+            if not info:
+                u["step"] = "menu"
+                save_db()
+                await send(cid, "Lost. Start over.", admin_kb())
                 return
-            item = DB["pending"].pop(idx)
-            if act == "OK":
-                buyer = get_user(item["uid"])
-                bonus = 0
-                if item["amount"] >= BONUS_AT:
-                    bonus = item["amount"] * BONUS_PCT / 100
-                buyer["balance"] += item["amount"] + bonus
+            pwd = cmd.strip()
+            try:
+                await info["client"].sign_in(password=pwd)
+                me = await info["client"].get_me()
+                sstr = info["client"].session.save()
+                with open(SESS_FILE, "a") as f:
+                    f.write(info["phone"] + "|" + sstr + "\n")
+                await info["client"].disconnect()
+                LOGIN_CLIENTS.pop(str(uid), None)
+                u["step"] = "menu"
+                save_db()
+                await send(cid, "Logged in as " + (me.first_name or "?") + "\nSession saved!\n\nRestart the server to activate.", admin_kb())
+            except Exception as e:
+                u["step"] = "menu"
                 save_db()
                 try:
-                    t = "\u2705 <b>Approved!</b>\n" + LINE + "\n\n"
-                    t += "\U0001F4B0 Recharged: Rs" + str(item["amount"]) + "\n"
-                    if bonus:
-                        t += "\U0001F381 Bonus: Rs" + str(round(bonus, 2)) + "\n"
-                    t += "\n\U0001F4B0 Balance: Rs" + str(round(buyer["balance"], 2))
-                    await send(item["uid"], t)
+                    await info["client"].disconnect()
                 except Exception:
                     pass
-                msgok = "\u2705 Approved Rs" + str(item["amount"])
-                if bonus:
-                    msgok += " + bonus Rs" + str(round(bonus, 2))
-                await send(cid, msgok, admin_kb())
-            else:
-                try:
-                    await send(item["uid"], "\u274C Payment rejected.")
-                except Exception:
-                    pass
-                await send(cid, "\u274C Rejected.", admin_kb())
-            u["step"] = "menu"
-            save_db()
+                LOGIN_CLIENTS.pop(str(uid), None)
+                await send(cid, "2FA wrong: " + str(e) + "\n\nStart over with Login Session.", admin_kb())
+            return
+
+        if low in ("sessions", "\U0001F4C1 sessions"):
+            if not os.path.exists(SESS_FILE):
+                await send(cid, "No sessions.", admin_kb())
+                return
+            with open(SESS_FILE) as f:
+                lines = [l.strip() for l in f if l.strip() and "|" in l]
+            t = "Sessions\n" + LINE + "\n\n"
+            t += "Total: " + str(len(lines)) + "\n\n"
+            for i, l in enumerate(lines):
+                t += str(i+1) + ". " + l.split("|")[0] + "\n"
+            await send(cid, t, admin_kb())
             return
 
         if low in ("add balance", "\U0001F4B5 add balance"):
             u["step"] = "ab_uid"
             save_db()
-            await send(cid, "\U0001F4B5 <b>Add Balance</b>\n\nSend user UID.", admin_kb())
+            await send(cid, "Send user UID.", admin_kb())
             return
         if u["step"] == "ab_uid":
             u["temp"]["uid"] = cmd
             u["step"] = "ab_amt"
             save_db()
-            await send(cid, "Send amount in rupees.", admin_kb())
+            await send(cid, "Send amount.", admin_kb())
             return
         if u["step"] == "ab_amt":
             try:
                 amt = float(cmd)
             except Exception:
-                await send(cid, "\u274C Invalid.", admin_kb())
+                await send(cid, "Invalid.", admin_kb())
                 return
             target = get_user(u["temp"]["uid"])
             target["balance"] += amt
             u["step"] = "menu"
             save_db()
-            await send(cid, "\u2705 Added Rs" + str(amt) + " to " + u["temp"]["uid"], admin_kb())
+            await send(cid, "Added Rs" + str(amt) + " to " + u["temp"]["uid"], admin_kb())
             try:
-                await send(int(u["temp"]["uid"]), "\U0001F4B0 Rs" + str(amt) + " added by admin\nNew balance: Rs" + str(round(target["balance"], 2)))
+                await send(int(u["temp"]["uid"]), "Rs" + str(amt) + " added. New balance Rs" + str(round(target["balance"], 2)))
             except Exception:
                 pass
             return
@@ -718,41 +928,37 @@ async def handle(update):
         if low in ("deduct balance", "\U0001F4B8 deduct balance"):
             u["step"] = "db_uid"
             save_db()
-            await send(cid, "\U0001F4B8 <b>Deduct Balance</b>\n\nSend user UID.", admin_kb())
+            await send(cid, "Send user UID.", admin_kb())
             return
         if u["step"] == "db_uid":
             u["temp"]["uid"] = cmd
             u["step"] = "db_amt"
             save_db()
-            await send(cid, "Send amount in rupees.", admin_kb())
+            await send(cid, "Send amount.", admin_kb())
             return
         if u["step"] == "db_amt":
             try:
                 amt = float(cmd)
             except Exception:
-                await send(cid, "\u274C Invalid.", admin_kb())
+                await send(cid, "Invalid.", admin_kb())
                 return
             target = get_user(u["temp"]["uid"])
             target["balance"] -= amt
             u["step"] = "menu"
             save_db()
-            await send(cid, "\u2705 Deducted Rs" + str(amt) + " from " + u["temp"]["uid"], admin_kb())
+            await send(cid, "Deducted Rs" + str(amt) + " from " + u["temp"]["uid"], admin_kb())
             return
 
         if low in ("create giveaway", "\U0001F381 create giveaway"):
             u["step"] = "ga_prize"
             save_db()
-            t = "\U0001F381 <b>Create Giveaway</b>\n" + LINE + "\n\n"
-            t += "Send the <b>prize amount</b> in rupees.\n\n"
-            t += "Users will get a math question.\n"
-            t += "Correct = prize. Wrong = miss."
-            await send(cid, t, admin_kb())
+            await send(cid, "Send prize amount.", admin_kb())
             return
         if u["step"] == "ga_prize":
             try:
                 prize = float(cmd)
             except Exception:
-                await send(cid, "\u274C Invalid amount.", admin_kb())
+                await send(cid, "Invalid.", admin_kb())
                 return
             for g in DB["giveaways"]:
                 g["active"] = False
@@ -764,35 +970,27 @@ async def handle(update):
             })
             u["step"] = "menu"
             save_db()
-            t = "\u2705 <b>Giveaway Created!</b>\n" + LINE + "\n\n"
-            t += "\U0001F4B0 Prize: Rs" + str(prize) + "\n\n"
-            t += "Users can now tap <b>Giveaway</b> and solve the math."
-            await send(cid, t, admin_kb())
-            for uid2 in list(DB["users"].keys()):
-                try:
-                    await send(int(uid2), "\U0001F381 <b>NEW GIVEAWAY!</b>\n" + LINE + "\n\n\U0001F4B0 Prize: Rs" + str(prize) + "\n\nTap <b>Giveaway</b> to play!")
-                except Exception:
-                    pass
+            await send(cid, "Giveaway created Rs" + str(prize), admin_kb())
             return
 
         if low in ("stats", "\U0001F4CA stats"):
             stock = len([a for a in DB["accounts"] if not a.get("sold")])
             sold = len([a for a in DB["accounts"] if a.get("sold")])
             rev = sum(a.get("price", 0) for a in DB["accounts"] if a.get("sold"))
-            t = "\U0001F4CA <b>Stats</b>\n" + LINE + "\n\n"
-            t += "\U0001F465 Users: " + str(len(DB["users"])) + "\n"
-            t += "\U0001F4E6 Total: " + str(len(DB["accounts"])) + "\n"
-            t += "\U0001F7E2 Stock: " + str(stock) + "\n"
-            t += "\U0001F534 Sold: " + str(sold) + "\n"
-            t += "\U0001F4B0 Revenue: Rs" + str(round(rev, 2)) + "\n"
-            t += "\U0001F4B8 Pending: " + str(len(DB["pending"]))
+            t = "Stats\n" + LINE + "\n\n"
+            t += "Users " + str(len(DB["users"])) + "\n"
+            t += "Accounts " + str(len(DB["accounts"])) + "\n"
+            t += "Stock " + str(stock) + "\n"
+            t += "Sold " + str(sold) + "\n"
+            t += "Revenue Rs" + str(round(rev, 2)) + "\n"
+            t += "Pending " + str(len(DB["pending"]))
             await send(cid, t, admin_kb())
             return
 
         if low in ("broadcast", "\U0001F4E3 broadcast"):
             u["step"] = "bc"
             save_db()
-            await send(cid, "\U0001F4E3 Send message to broadcast.", admin_kb())
+            await send(cid, "Send message to broadcast.", admin_kb())
             return
         if u["step"] == "bc":
             ok = 0
@@ -805,7 +1003,7 @@ async def handle(update):
                     fail += 1
             u["step"] = "menu"
             save_db()
-            await send(cid, "\u2705 Sent " + str(ok) + " Failed " + str(fail), admin_kb())
+            await send(cid, "Sent " + str(ok) + " Failed " + str(fail), admin_kb())
             return
 
     await send(cid, "Unknown command. Use buttons.", kb)
