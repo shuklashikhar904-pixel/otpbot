@@ -21,10 +21,11 @@ API_ID = 33576198
 API_HASH = "7b59cd4d6fed5c8aa9c794f204e25050"
 BOT_TOKEN = "8936958039:AAF_F4f0VMzc_rZtdhqrKuunSnJ34FvuO94"
 ADMIN_IDS = [8646237754]
-BOT_USER = "trusteddealers07bot"
+BOT_USER = "trusteddealrs07bot"
 UPI_ID = "shikharshukla606@naviaxis"
 UPI_NAME = "Shikhar Shukla"
 SUPPORT = "@deathalive07"
+LOG_CHANNEL = "@selleings"
 
 CHANNELS = [
     {"user": "@trusteddealers07", "link": "https://t.me/trusteddealers07"},
@@ -32,33 +33,146 @@ CHANNELS = [
 ]
 
 COUNTRIES = [
-    "India", "Myanmar", "USA", "UK", "Indonesia", "Philippines", "Vietnam",
-    "Bangladesh", "Pakistan", "Sri Lanka", "Nepal", "Nigeria", "Ghana",
-    "Kenya", "South Africa", "Egypt", "Morocco", "UAE", "Saudi Arabia",
-    "Turkey", "Iran", "Iraq", "Israel", "Russia", "Ukraine", "Poland",
-    "Germany", "France", "Spain", "Italy", "Portugal", "Netherlands",
-    "Belgium", "Sweden", "Norway", "Denmark", "Finland", "Ireland",
-    "Switzerland", "Austria", "Greece", "Czech Republic", "Romania",
-    "Hungary", "Bulgaria", "Serbia", "Croatia", "Thailand", "Malaysia",
-    "Singapore", "China", "Japan", "South Korea", "Taiwan", "Hong Kong",
-    "Australia", "New Zealand", "Canada", "Mexico", "Brazil", "Argentina",
-    "Chile", "Colombia", "Peru", "Venezuela", "Ecuador", "Bolivia",
-    "Paraguay", "Uruguay", "Cuba", "Dominican Republic", "Guatemala",
-    "Honduras", "El Salvador", "Nicaragua", "Costa Rica", "Panama",
-    "Jamaica", "Haiti", "Puerto Rico", "Afghanistan", "Albania",
-    "Algeria", "Angola", "Armenia", "Azerbaijan", "Bahrain", "Belarus",
-    "Benin", "Bhutan", "Botswana", "Burkina Faso", "Burundi", "Cambodia",
-    "Cameroon", "Chad", "Congo", "Cyprus", "Djibouti", "Estonia",
-    "Ethiopia", "Fiji", "Gabon", "Gambia", "Georgia", "Iceland",
-    "Ivory Coast", "Jordan", "Kazakhstan", "Kuwait", "Kyrgyzstan",
-    "Laos", "Latvia", "Lebanon", "Liberia", "Libya", "Lithuania",
-    "Luxembourg", "Madagascar", "Malawi", "Maldives", "Mali", "Malta",
-    "Mauritania", "Mauritius", "Moldova", "Mongolia", "Montenegro",
-    "Mozambique", "Namibia", "Oman", "Palestine", "Papua New Guinea",
-    "Qatar", "Rwanda", "Senegal", "Sierra Leone", "Slovakia", "Slovenia",
-    "Somalia", "Sudan", "Syria", "Tajikistan", "Tanzania", "Togo",
-    "Tunisia", "Turkmenistan", "Uganda", "Uzbekistan", "Yemen",
-    "Zambia", "Zimbabwe"
+    ("India", "\U0001F1EE\U0001F1F3", "+91"),
+    ("Myanmar", "\U0001F1F2\U0001F1F2", "+95"),
+    ("USA", "\U0001F1FA\U0001F1F8", "+1"),
+    ("UK", "\U0001F1EC\U0001F1E7", "+44"),
+    ("Indonesia", "\U0001F1EE\U0001F1E9", "+62"),
+    ("Philippines", "\U0001F1F5\U0001F1ED", "+63"),
+    ("Vietnam", "\U0001F1FB\U0001F1F3", "+84"),
+    ("Bangladesh", "\U0001F1E7\U0001F1E9", "+880"),
+    ("Pakistan", "\U0001F1F5\U0001F1F0", "+92"),
+    ("Sri Lanka", "\U0001F1F1\U0001F1F0", "+94"),
+    ("Nepal", "\U0001F1F3\U0001F1F5", "+977"),
+    ("Nigeria", "\U0001F1F3\U0001F1EC", "+234"),
+    ("Ghana", "\U0001F1EC\U0001F1ED", "+233"),
+    ("Kenya", "\U0001F1F0\U0001F1EA", "+254"),
+    ("South Africa", "\U0001F1FF\U0001F1E6", "+27"),
+    ("Egypt", "\U0001F1EA\U0001F1EC", "+20"),
+    ("Morocco", "\U0001F1F2\U0001F1E6", "+212"),
+    ("UAE", "\U0001F1E6\U0001F1EA", "+971"),
+    ("Saudi Arabia", "\U0001F1F8\U0001F1E6", "+966"),
+    ("Turkey", "\U0001F1F9\U0001F1F7", "+90"),
+    ("Iran", "\U0001F1EE\U0001F1F7", "+98"),
+    ("Iraq", "\U0001F1EE\U0001F1F6", "+964"),
+    ("Israel", "\U0001F1EE\U0001F1F1", "+972"),
+    ("Russia", "\U0001F1F7\U0001F1FA", "+7"),
+    ("Ukraine", "\U0001F1FA\U0001F1E6", "+380"),
+    ("Poland", "\U0001F1F5\U0001F1F1", "+48"),
+    ("Germany", "\U0001F1E9\U0001F1EA", "+49"),
+    ("France", "\U0001F1EB\U0001F1F7", "+33"),
+    ("Spain", "\U0001F1EA\U0001F1F8", "+34"),
+    ("Italy", "\U0001F1EE\U0001F1F9", "+39"),
+    ("Portugal", "\U0001F1F5\U0001F1F9", "+351"),
+    ("Netherlands", "\U0001F1F3\U0001F1F1", "+31"),
+    ("Belgium", "\U0001F1E7\U0001F1EA", "+32"),
+    ("Sweden", "\U0001F1F8\U0001F1EA", "+46"),
+    ("Norway", "\U0001F1F3\U0001F1F4", "+47"),
+    ("Denmark", "\U0001F1E9\U0001F1F0", "+45"),
+    ("Finland", "\U0001F1EB\U0001F1EE", "+358"),
+    ("Ireland", "\U0001F1EE\U0001F1EA", "+353"),
+    ("Switzerland", "\U0001F1E8\U0001F1ED", "+41"),
+    ("Austria", "\U0001F1E6\U0001F1F9", "+43"),
+    ("Greece", "\U0001F1EC\U0001F1F7", "+30"),
+    ("Czech Republic", "\U0001F1E8\U0001F1FF", "+420"),
+    ("Romania", "\U0001F1F7\U0001F1F4", "+40"),
+    ("Hungary", "\U0001F1ED\U0001F1FA", "+36"),
+    ("Bulgaria", "\U0001F1E7\U0001F1EC", "+359"),
+    ("Serbia", "\U0001F1F7\U0001F1F8", "+381"),
+    ("Croatia", "\U0001F1ED\U0001F1F7", "+385"),
+    ("Thailand", "\U0001F1F9\U0001F1ED", "+66"),
+    ("Malaysia", "\U0001F1F2\U0001F1FE", "+60"),
+    ("Singapore", "\U0001F1F8\U0001F1EC", "+65"),
+    ("China", "\U0001F1E8\U0001F1F3", "+86"),
+    ("Japan", "\U0001F1EF\U0001F1F5", "+81"),
+    ("South Korea", "\U0001F1F0\U0001F1F7", "+82"),
+    ("Taiwan", "\U0001F1F9\U0001F1FC", "+886"),
+    ("Hong Kong", "\U0001F1ED\U0001F1F0", "+852"),
+    ("Australia", "\U0001F1E6\U0001F1FA", "+61"),
+    ("New Zealand", "\U0001F1F3\U0001F1FF", "+64"),
+    ("Canada", "\U0001F1E8\U0001F1E6", "+1"),
+    ("Mexico", "\U0001F1F2\U0001F1FD", "+52"),
+    ("Brazil", "\U0001F1E7\U0001F1F7", "+55"),
+    ("Argentina", "\U0001F1E6\U0001F1F7", "+54"),
+    ("Chile", "\U0001F1E8\U0001F1F1", "+56"),
+    ("Colombia", "\U0001F1E8\U0001F1F4", "+57"),
+    ("Peru", "\U0001F1F5\U0001F1EA", "+51"),
+    ("Venezuela", "\U0001F1FB\U0001F1EA", "+58"),
+    ("Ecuador", "\U0001F1EA\U0001F1E8", "+593"),
+    ("Bolivia", "\U0001F1E7\U0001F1F4", "+591"),
+    ("Paraguay", "\U0001F1F5\U0001F1FE", "+595"),
+    ("Uruguay", "\U0001F1FA\U0001F1FE", "+598"),
+    ("Cuba", "\U0001F1E8\U0001F1FA", "+53"),
+    ("Jamaica", "\U0001F1EF\U0001F1F2", "+1876"),
+    ("Haiti", "\U0001F1ED\U0001F1F9", "+509"),
+    ("Afghanistan", "\U0001F1E6\U0001F1EB", "+93"),
+    ("Albania", "\U0001F1E6\U0001F1F1", "+355"),
+    ("Algeria", "\U0001F1E9\U0001F1FF", "+213"),
+    ("Angola", "\U0001F1E6\U0001F1F4", "+244"),
+    ("Armenia", "\U0001F1E6\U0001F1F2", "+374"),
+    ("Azerbaijan", "\U0001F1E6\U0001F1FF", "+994"),
+    ("Bahrain", "\U0001F1E7\U0001F1ED", "+973"),
+    ("Belarus", "\U0001F1E7\U0001F1FE", "+375"),
+    ("Benin", "\U0001F1E7\U0001F1EF", "+229"),
+    ("Bhutan", "\U0001F1E7\U0001F1F9", "+975"),
+    ("Botswana", "\U0001F1E7\U0001F1FC", "+267"),
+    ("Cambodia", "\U0001F1F0\U0001F1ED", "+855"),
+    ("Cameroon", "\U0001F1E8\U0001F1F2", "+237"),
+    ("Chad", "\U0001F1F9\U0001F1E9", "+235"),
+    ("Congo", "\U0001F1E8\U0001F1EC", "+242"),
+    ("Cyprus", "\U0001F1E8\U0001F1FE", "+357"),
+    ("Djibouti", "\U0001F1E9\U0001F1EF", "+253"),
+    ("Estonia", "\U0001F1EA\U0001F1EA", "+372"),
+    ("Ethiopia", "\U0001F1EA\U0001F1F9", "+251"),
+    ("Fiji", "\U0001F1EB\U0001F1EF", "+679"),
+    ("Gabon", "\U0001F1EC\U0001F1E6", "+241"),
+    ("Gambia", "\U0001F1EC\U0001F1F2", "+220"),
+    ("Georgia", "\U0001F1EC\U0001F1EA", "+995"),
+    ("Iceland", "\U0001F1EE\U0001F1F8", "+354"),
+    ("Ivory Coast", "\U0001F1E8\U0001F1EE", "+225"),
+    ("Jordan", "\U0001F1EF\U0001F1F4", "+962"),
+    ("Kazakhstan", "\U0001F1F0\U0001F1FF", "+7"),
+    ("Kuwait", "\U0001F1F0\U0001F1FC", "+965"),
+    ("Kyrgyzstan", "\U0001F1F0\U0001F1EC", "+996"),
+    ("Laos", "\U0001F1F1\U0001F1E6", "+856"),
+    ("Latvia", "\U0001F1F1\U0001F1FB", "+371"),
+    ("Lebanon", "\U0001F1F1\U0001F1E7", "+961"),
+    ("Liberia", "\U0001F1F1\U0001F1F7", "+231"),
+    ("Libya", "\U0001F1F1\U0001F1FE", "+218"),
+    ("Lithuania", "\U0001F1F1\U0001F1F9", "+370"),
+    ("Luxembourg", "\U0001F1F1\U0001F1FA", "+352"),
+    ("Madagascar", "\U0001F1F2\U0001F1EC", "+261"),
+    ("Malawi", "\U0001F1F2\U0001F1FC", "+265"),
+    ("Maldives", "\U0001F1F2\U0001F1FB", "+960"),
+    ("Mali", "\U0001F1F2\U0001F1F1", "+223"),
+    ("Malta", "\U0001F1F2\U0001F1F9", "+356"),
+    ("Mauritius", "\U0001F1F2\U0001F1FA", "+230"),
+    ("Moldova", "\U0001F1F2\U0001F1E9", "+373"),
+    ("Mongolia", "\U0001F1F2\U0001F1F3", "+976"),
+    ("Montenegro", "\U0001F1F2\U0001F1EA", "+382"),
+    ("Mozambique", "\U0001F1F2\U0001F1FF", "+258"),
+    ("Namibia", "\U0001F1F3\U0001F1E6", "+264"),
+    ("Oman", "\U0001F1F4\U0001F1F2", "+968"),
+    ("Palestine", "\U0001F1F5\U0001F1F8", "+970"),
+    ("Qatar", "\U0001F1F6\U0001F1E6", "+974"),
+    ("Rwanda", "\U0001F1F7\U0001F1FC", "+250"),
+    ("Senegal", "\U0001F1F8\U0001F1F3", "+221"),
+    ("Sierra Leone", "\U0001F1F8\U0001F1F1", "+232"),
+    ("Slovakia", "\U0001F1F8\U0001F1F0", "+421"),
+    ("Slovenia", "\U0001F1F8\U0001F1EE", "+386"),
+    ("Somalia", "\U0001F1F8\U0001F1F4", "+252"),
+    ("Sudan", "\U0001F1F8\U0001F1E9", "+249"),
+    ("Syria", "\U0001F1F8\U0001F1FE", "+963"),
+    ("Tajikistan", "\U0001F1F9\U0001F1EF", "+992"),
+    ("Tanzania", "\U0001F1F9\U0001F1FF", "+255"),
+    ("Togo", "\U0001F1F9\U0001F1EC", "+228"),
+    ("Tunisia", "\U0001F1F9\U0001F1F3", "+216"),
+    ("Turkmenistan", "\U0001F1F9\U0001F1F2", "+993"),
+    ("Uganda", "\U0001F1FA\U0001F1EC", "+256"),
+    ("Uzbekistan", "\U0001F1FA\U0001F1FF", "+998"),
+    ("Yemen", "\U0001F1FE\U0001F1EA", "+967"),
+    ("Zambia", "\U0001F1FF\U0001F1F2", "+260"),
+    ("Zimbabwe", "\U0001F1FF\U0001F1FC", "+263")
 ]
 
 REF_BONUS = 0.40
@@ -75,7 +189,7 @@ LOGIN_CLIENTS = {}
 
 def load_db():
     if not os.path.exists(DB_FILE):
-        return {"users": {}, "accounts": [], "pending": [], "giveaways": []}
+        return {"users": {}, "accounts": [], "pending": [], "giveaways": [], "tickets": []}
     try:
         with open(DB_FILE) as f:
             d = json.load(f)
@@ -83,9 +197,11 @@ def load_db():
                 d["giveaways"] = []
             if "pending" not in d:
                 d["pending"] = []
+            if "tickets" not in d:
+                d["tickets"] = []
             return d
     except Exception:
-        return {"users": {}, "accounts": [], "pending": [], "giveaways": []}
+        return {"users": {}, "accounts": [], "pending": [], "giveaways": [], "tickets": []}
 
 
 def save_db():
@@ -157,6 +273,23 @@ def qr_url(amount):
     return "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" + quote(upi)
 
 
+def mask_phone(p):
+    p = str(p)
+    n = len(p)
+    if n <= 6:
+        return p[:1] + "*****" + p[-1:]
+    front = (n - 5) // 2
+    back = n - 5 - front
+    return p[:front] + "*****" + p[n-back:]
+
+
+async def send_log(text):
+    try:
+        await send(LOG_CHANNEL, text)
+    except Exception as e:
+        print("log err", e)
+
+
 def user_kb():
     return {"keyboard": [
         [{"text": "\U0001F6D2 Buy Account"}, {"text": "\U0001F4E6 My Orders"}],
@@ -174,7 +307,7 @@ def admin_kb():
         [{"text": "\U0001F4B5 Add Balance"}, {"text": "\U0001F4B8 Deduct Balance"}],
         [{"text": "\U0001F510 Login Session"}, {"text": "\U0001F4C1 Sessions"}],
         [{"text": "\U0001F381 Create Giveaway"}, {"text": "\U0001F4E3 Broadcast"}],
-        [{"text": "\u2B05\uFE0F Back"}]
+        [{"text": "\U0001F4E9 Tickets"}, {"text": "\u2B05\uFE0F Back"}]
     ], "resize_keyboard": True}
 
 
@@ -283,6 +416,28 @@ def account_button_label(a):
     return str(a.get("country", "")) + " - " + str(a.get("age", "Fresh")) + " - Rs" + str(a.get("price"))
 
 
+def build_country_page(pg):
+    per_page = 20
+    total = len(COUNTRIES)
+    start = pg * per_page
+    end = min(start + per_page, total)
+    rows = []
+    for i in range(start, end):
+        name, flag, code = COUNTRIES[i]
+        label = flag + " " + name + " " + code
+        rows.append([{"text": label, "callback_data": "ac_" + str(i)}])
+    nav = []
+    if pg > 0:
+        nav.append({"text": "\u25C0 Prev", "callback_data": "acp_" + str(pg-1)})
+    if end < total:
+        nav.append({"text": "More \u25B6", "callback_data": "acp_" + str(pg+1)})
+    if nav:
+        rows.append(nav)
+    rows.append([{"text": "\u2795 Rare (custom)", "callback_data": "acrare"}])
+    rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
+    return rows
+
+
 async def handle_callback(cq):
     uid = cq["from"]["id"]
     cid = cq["message"]["chat"]["id"]
@@ -301,36 +456,42 @@ async def handle_callback(cq):
         if uid not in ADMIN_IDS:
             return
         pg = int(data.split("_")[1])
-        per_page = 6
-        total = len(COUNTRIES)
-        start = pg * per_page
-        end = min(start + per_page, total)
-        rows = []
-        for i in range(start, end, 2):
-            rows.append([{"text": c, "callback_data": "ac_" + c} for c in COUNTRIES[i:i+2]])
-        nav = []
-        if pg > 0:
-            nav.append({"text": "\u25C0 Prev", "callback_data": "acp_" + str(pg-1)})
-        if end < total:
-            nav.append({"text": "More \u25B6", "callback_data": "acp_" + str(pg+1)})
-        if nav:
-            rows.append(nav)
-        rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
-        await edit(cid, mid, "\u2795 <b>Add Account</b> \u2022 page " + str(pg+1) + "\n" + LINE + "\n\nTap the <b>country</b>:", {"inline_keyboard": rows})
+        rows = build_country_page(pg)
+        await edit(cid, mid, "\u2795 <b>Add Account</b> \u2022 page " + str(pg+1) + "\n" + LINE + "\n\nTap country:", {"inline_keyboard": rows})
+        return
+
+    if data == "acrare":
+        if uid not in ADMIN_IDS:
+            return
+        u["step"] = "add_rare_country"
+        u["temp"] = {}
+        save_db()
+        t = "\u2795 <b>Rare Country</b>\n" + LINE + "\n\n"
+        t += "Send the <b>country name + code</b> in one line:\n\n"
+        t += "Format: <code>CountryName|+Code</code>\n\n"
+        t += "Example:\n"
+        t += "<code>Kosovo|+383</code>\n"
+        t += "<code>Greenland|+299</code>"
+        await edit(cid, mid, t, admin_kb())
         return
 
     if data.startswith("ac_"):
         if uid not in ADMIN_IDS:
             return
-        country = data.replace("ac_", "", 1)
+        try:
+            idx = int(data.replace("ac_", ""))
+            name, flag, code = COUNTRIES[idx]
+        except Exception:
+            await edit(cid, mid, "\u274C Bad country.", admin_kb())
+            return
         u["step"] = "add_pending"
-        u["temp"] = {"add_country": country}
+        u["temp"] = {"add_country": name, "add_flag": flag, "add_code": code}
         save_db()
-        t = "\U0001F30D <b>" + country + "</b>\n" + LINE + "\n\n"
+        t = flag + " <b>" + name + "</b> " + code + "\n" + LINE + "\n\n"
         t += "Send in ONE line separated by <b>|</b> :\n\n"
         t += "<code>phone|age|2fa|price</code>\n\n"
         t += "Example:\n<code>919999999999|Fresh|pass123|50</code>\n\n"
-        t += "Tags: Fresh / Rare / Old / 1 Year / 6 Months / anything"
+        t += "Tags: Fresh / Rare / Old / 1 Year / 6 Months"
         await edit(cid, mid, t, admin_kb())
         return
 
@@ -370,6 +531,18 @@ async def handle_callback(cq):
         await edit(cid, mid, t, kb)
         return
 
+    if data.startswith("treply_"):
+        if uid not in ADMIN_IDS:
+            return
+        idx = int(data.split("_")[1])
+        if idx < 0 or idx >= len(DB["tickets"]):
+            await edit(cid, mid, "\u274C Ticket gone.", admin_kb())
+            return
+        u["step"] = "tr_" + str(idx)
+        save_db()
+        await edit(cid, mid, "\u2709\uFE0F <b>Reply to ticket #" + str(idx+1) + "</b>\n" + LINE + "\n\nType your reply.", admin_kb())
+        return
+
     if data.startswith("approve_"):
         if uid not in ADMIN_IDS:
             return
@@ -393,6 +566,13 @@ async def handle_callback(cq):
             await send(item["uid"], t)
         except Exception:
             pass
+        log_t = "\U0001F4B0 <b>DEPOSIT APPROVED</b>\n" + LINE + "\n\n"
+        log_t += "User: <code>" + str(item["uid"]) + "</code>\n"
+        log_t += "Amount: Rs" + str(item["amount"])
+        if bonus:
+            log_t += " + Rs" + str(round(bonus, 2)) + " bonus"
+        log_t += "\nNew balance: Rs" + str(round(buyer["balance"], 2))
+        await send_log(log_t)
         await edit(cid, mid, "\u2705 Approved Rs" + str(item["amount"]), admin_kb())
         return
 
@@ -457,7 +637,38 @@ async def handle(update):
                 except Exception:
                     pass
 
-    if low in ("/start", "/menu", "/cancel", "back", "") or low == "\u2b05\ufe0f back":
+    if u["step"].startswith("tr_"):
+        if not is_admin:
+            u["step"] = "menu"
+            save_db()
+            return
+        try:
+            idx = int(u["step"].replace("tr_", ""))
+        except Exception:
+            u["step"] = "menu"
+            save_db()
+            return
+        if idx < 0 or idx >= len(DB["tickets"]):
+            u["step"] = "menu"
+            save_db()
+            await send(cid, "\u274C Ticket gone.", admin_kb())
+            return
+        if not cmd:
+            await send(cid, "Type the reply.", admin_kb())
+            return
+        ticket = DB["tickets"][idx]
+        ticket["replied"] = True
+        u["step"] = "menu"
+        save_db()
+        try:
+            t = "\U0001F4AC <b>Support Reply</b>\n" + LINE + "\n\n" + cmd
+            await send(ticket["uid"], t)
+        except Exception:
+            pass
+        await send(cid, "\u2705 Reply sent.", admin_kb())
+        return
+
+    if low in ("/start", "/menu", "/cancel", "back", "") or "\u2b05\ufe0f back" in low:
         u["step"] = "menu"
         u["temp"] = {}
         save_db()
@@ -466,7 +677,8 @@ async def handle(update):
             t = "\U0001F510 <b>ADMIN CONSOLE</b>\n" + LINE + "\n\n"
             t += "Stock <b>" + str(stock) + "</b>\n"
             t += "Users <b>" + str(len(DB["users"])) + "</b>\n"
-            t += "Pending <b>" + str(len(DB["pending"])) + "</b>\n\n"
+            t += "Pending <b>" + str(len(DB["pending"])) + "</b>\n"
+            t += "Tickets <b>" + str(len(DB["tickets"])) + "</b>\n\n"
             t += "\u2728 Choose an option"
             await send(cid, t, kb)
         else:
@@ -533,9 +745,15 @@ async def handle(update):
         await send(cid, t, kb)
         for adm in ADMIN_IDS:
             try:
-                await send(adm, "Sale " + str(uid) + " bought " + str(acc.get("phone")))
+                await send(adm, "Sale " + str(uid) + " bought " + mask_phone(acc.get("phone")))
             except Exception:
                 pass
+        log_t = "\U0001F6D2 <b>SALE</b>\n" + LINE + "\n\n"
+        log_t += "Buyer: <code>" + str(uid) + "</code>\n"
+        log_t += "Country: " + str(acc.get("country")) + "\n"
+        log_t += "Number: " + mask_phone(acc.get("phone")) + "\n"
+        log_t += "Price: Rs" + str(acc["price"])
+        await send_log(log_t)
         return
 
     if low in ("my orders", "\U0001F4E6 my orders"):
@@ -563,8 +781,7 @@ async def handle(update):
             amt = float(cmd.replace("Rs", "").replace("rs", "").replace("\u20B9", "").strip())
         except Exception:
             await send(cid, "Send a number only. Example: 100", kb)
-                        return
-
+            return
         if amt < MIN_FUND:
             await send(cid, "Minimum is Rs" + str(int(MIN_FUND)), kb)
             return
@@ -706,8 +923,38 @@ async def handle(update):
         await send(cid, t, kb)
         return
 
-    if low in ("support", "\U0001F198 support"):
-        await send(cid, "Contact " + SUPPORT, kb)
+    if low in ("support", "\U0001F198 support", "help", "\u2753 help"):
+        u["step"] = "help_ask"
+        save_db()
+        t = "\U0001F198 <b>Help & Support</b>\n" + LINE + "\n\n"
+        t += "Type your question or problem below.\n\n"
+        t += "Our team will reply soon in this chat."
+        await send(cid, t, kb)
+        return
+
+    if u["step"] == "help_ask":
+        if not cmd:
+            await send(cid, "Type your question.", kb)
+            return
+        DB["tickets"].append({
+            "uid": uid,
+            "msg": cmd,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "replied": False
+        })
+        u["step"] = "menu"
+        save_db()
+        idx = len(DB["tickets"]) - 1
+        await send(cid, "\u2705 Sent! You'll get a reply here soon.", kb)
+        for adm in ADMIN_IDS:
+            try:
+                t = "\U0001F4E9 <b>NEW TICKET #" + str(idx+1) + "</b>\n" + LINE + "\n\n"
+                t += "From <code>" + str(uid) + "</code>\n"
+                t += cmd
+                rows = [[{"text": "\u2709\uFE0F Reply", "callback_data": "treply_" + str(idx)}]]
+                await send(adm, t, {"inline_keyboard": rows})
+            except Exception:
+                pass
         return
 
     if low in ("channel", "\U0001F4E2 channel"):
@@ -718,20 +965,25 @@ async def handle(update):
     if is_admin:
 
         if low in ("add account", "\u2795 add account"):
-            per_page = 6
-            total = len(COUNTRIES)
-            start = 0
-            end = min(per_page, total)
-            rows = []
-            for i in range(start, end, 2):
-                rows.append([{"text": c, "callback_data": "ac_" + c} for c in COUNTRIES[i:i+2]])
-            nav = []
-            if end < total:
-                nav.append({"text": "More \u25B6", "callback_data": "acp_1"})
-            if nav:
-                rows.append(nav)
-            rows.append([{"text": "\u2B05\uFE0F Back", "callback_data": "menu"}])
-            await send(cid, "Add Account\n" + LINE + "\n\nTap the country:", {"inline_keyboard": rows})
+            rows = build_country_page(0)
+            await send(cid, "Add Account\n" + LINE + "\n\nTap country:", {"inline_keyboard": rows})
+            return
+
+        if u["step"] == "add_rare_country":
+            parts = cmd.split("|")
+            if len(parts) != 2:
+                await send(cid, "Wrong format.\n\nSend: <code>CountryName|+Code</code>\n\nExample: <code>Kosovo|+383</code>", admin_kb())
+                return
+            name = parts[0].strip()
+            code = parts[1].strip()
+            u["step"] = "add_pending"
+            u["temp"] = {"add_country": name, "add_flag": "\U0001F30D", "add_code": code}
+            save_db()
+            t = "\U0001F30D <b>" + name + "</b> " + code + "\n" + LINE + "\n\n"
+            t += "Send in ONE line separated by <b>|</b> :\n\n"
+            t += "<code>phone|age|2fa|price</code>\n\n"
+            t += "Example:\n<code>" + code.replace("+", "") + "9999999999|Fresh|pass123|50</code>"
+            await send(cid, t, admin_kb())
             return
 
         if u["step"] == "add_pending":
@@ -761,11 +1013,18 @@ async def handle(update):
             save_db()
             t = "Added\n" + LINE + "\n\n"
             t += country + "\n"
-            t += parts[0].strip() + "\n"
+            t += mask_phone(parts[0].strip()) + "\n"
             t += parts[1].strip() + "\n"
             t += parts[2].strip() + "\n"
             t += "Rs" + str(price)
             await send(cid, t, admin_kb())
+            stock_left = len([a for a in DB["accounts"] if not a.get("sold")])
+            log_t = "\U0001F4E6 <b>NEW STOCK</b>\n" + LINE + "\n\n"
+            log_t += "Country: " + country + "\n"
+            log_t += "Number: " + mask_phone(parts[0].strip()) + "\n"
+            log_t += "Price: Rs" + str(price) + "\n"
+            log_t += "Stock left: " + str(stock_left)
+            await send_log(log_t)
             return
 
         if low in ("list accounts", "\U0001F4CB list accounts"):
@@ -775,7 +1034,7 @@ async def handle(update):
             t = "Accounts\n" + LINE + "\n\n"
             for a in DB["accounts"][-30:]:
                 s = "SOLD" if a.get("sold") else "OK"
-                t += "#" + str(a["id"]) + " " + str(a.get("country")) + " " + str(a.get("phone")) + " Rs" + str(a.get("price")) + " " + s + "\n"
+                t += "#" + str(a["id"]) + " " + str(a.get("country")) + " " + mask_phone(a.get("phone")) + " Rs" + str(a.get("price")) + " " + s + "\n"
             await send(cid, t, admin_kb())
             return
 
@@ -795,6 +1054,22 @@ async def handle(update):
                 ]]
                 await send(cid, t, {"inline_keyboard": rows})
             return
+
+        if low in ("tickets", "\U0001F4E9 tickets"):
+            if not DB["tickets"]:
+                await send(cid, "No tickets.", admin_kb())
+                return
+            start = max(0, len(DB["tickets"]) - 10)
+            for i in range(start, len(DB["tickets"])):
+                tk = DB["tickets"][i]
+                t = "TICKET #" + str(i+1) + "\n" + LINE + "\n\n"
+                t += "From <code>" + str(tk["uid"]) + "</code>\n"
+                t += str(tk["time"]) + "\n"
+                t += str(tk["msg"]) + "\n"
+                t += ("Replied" if tk.get("replied") else "Not replied")
+                rows = [[{"text": "\u2709\uFE0F Reply", "callback_data": "treply_" + str(i)}]]
+                await send(cid, t, {"inline_keyboard": rows}) 
+                return
 
         if low in ("login session", "\U0001F510 login session"):
             u["step"] = "login_phone"
@@ -923,6 +1198,11 @@ async def handle(update):
                 await send(int(u["temp"]["uid"]), "Rs" + str(amt) + " added. New balance Rs" + str(round(target["balance"], 2)))
             except Exception:
                 pass
+            log_t = "\U0001F4B5 <b>ADMIN CREDIT</b>\n" + LINE + "\n\n"
+            log_t += "User: <code>" + str(u["temp"]["uid"]) + "</code>\n"
+            log_t += "Amount: Rs" + str(amt) + "\n"
+            log_t += "New balance: Rs" + str(round(target["balance"], 2))
+            await send_log(log_t)
             return
 
         if low in ("deduct balance", "\U0001F4B8 deduct balance"):
@@ -947,6 +1227,11 @@ async def handle(update):
             u["step"] = "menu"
             save_db()
             await send(cid, "Deducted Rs" + str(amt) + " from " + u["temp"]["uid"], admin_kb())
+            log_t = "\U0001F4B8 <b>ADMIN DEBIT</b>\n" + LINE + "\n\n"
+            log_t += "User: <code>" + str(u["temp"]["uid"]) + "</code>\n"
+            log_t += "Amount: Rs" + str(amt) + "\n"
+            log_t += "New balance: Rs" + str(round(target["balance"], 2))
+            await send_log(log_t)
             return
 
         if low in ("create giveaway", "\U0001F381 create giveaway"):
@@ -1009,6 +1294,27 @@ async def handle(update):
     await send(cid, "Unknown command. Use buttons.", kb)
 
 
+async def leaderboard_loop():
+    await asyncio.sleep(60)
+    while True:
+        try:
+            ranked = []
+            for u, d in DB["users"].items():
+                n = len(d.get("refs", []))
+                if n > 0:
+                    ranked.append((u, n))
+            ranked.sort(key=lambda x: x[1], reverse=True)
+            top = ranked[:10]
+            if top:
+                t = "\U0001F3C6 <b>TOP REFERRALS</b>\n" + LINE + "\n\n"
+                for i, (u, n) in enumerate(top):
+                    t += str(i+1) + ". <code>" + str(u) + "</code> \u2014 " + str(n) + " refs\n"
+                await send_log(t)
+        except Exception as e:
+            print("lb err", e)
+        await asyncio.sleep(6 * 3600)
+
+
 async def poll():
     offset = 0
     while True:
@@ -1028,6 +1334,7 @@ async def main():
     HTTP = aiohttp.ClientSession()
     print("=== BOT STARTED ===")
     await start_userbots()
+    asyncio.create_task(leaderboard_loop())
     print("=== POLLING ===")
     await poll()
 
