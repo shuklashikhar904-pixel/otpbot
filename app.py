@@ -227,7 +227,9 @@ def math_question():
     else:
         ans = a * b
     return str(a) + " " + op + " " + str(b), ans
-        async def handle(update):
+
+
+async def handle(update):
     msg = update.get("message")
     if not msg:
         return
@@ -265,7 +267,6 @@ def math_question():
                 except Exception:
                     pass
 
-    # ===== MENU =====
     if low in ("/start", "/menu", "/cancel", "back", ""):
         u["step"] = "menu"
         u["temp"] = {}
@@ -291,7 +292,6 @@ def math_question():
             await send(cid, t, kb)
         return
 
-    # ===== BUY =====
     if low == "buy account" or low == "\U0001F6D2 buy account":
         avail = [a for a in DB["accounts"] if not a.get("sold")]
         if not avail:
@@ -414,7 +414,6 @@ def math_question():
         await send(cid, t, kb)
         return
 
-    # ===== ADD FUNDS =====
     if low in ("add funds", "\U0001F4B0 add funds"):
         u["step"] = "fund_amount"
         save_db()
@@ -475,7 +474,6 @@ def math_question():
                 pass
         return
 
-    # ===== PROFILE =====
     if low in ("profile", "\U0001F464 profile"):
         t = "\U0001F464 <b>Profile</b>\n" + LINE + "\n\n"
         t += "\U0001F194 ID: <code>" + str(uid) + "</code>\n"
@@ -487,7 +485,6 @@ def math_question():
         await send(cid, t, kb)
         return
 
-    # ===== EARN 5% =====
     if low in ("earn", "earn 5%", "\U0001F3AF earn 5%"):
         t = "\U0001F3AF <b>Earn 5%</b>\n" + LINE + "\n\n"
         t += "Invite friends and earn <b>5%</b> of their first deposit!\n\n"
@@ -497,7 +494,6 @@ def math_question():
         await send(cid, t, kb)
         return
 
-    # ===== GIVEAWAY =====
     if low in ("giveaway", "\U0001F381 giveaway"):
         g = current_giveaway()
         if not g:
@@ -580,7 +576,6 @@ def math_question():
         await send(cid, "<b>Channels</b>\n" + LINE + "\n\n" + links, kb)
         return
 
-    # ===== ADMIN =====
     if is_admin:
 
         if low in ("add account", "\u2795 add account"):
@@ -728,4 +723,116 @@ def math_question():
         if u["step"] == "db_uid":
             u["temp"]["uid"] = cmd
             u["step"] = "db_amt"
-           
+            save_db()
+            await send(cid, "Send amount in rupees.", admin_kb())
+            return
+        if u["step"] == "db_amt":
+            try:
+                amt = float(cmd)
+            except Exception:
+                await send(cid, "\u274C Invalid.", admin_kb())
+                return
+            target = get_user(u["temp"]["uid"])
+            target["balance"] -= amt
+            u["step"] = "menu"
+            save_db()
+            await send(cid, "\u2705 Deducted Rs" + str(amt) + " from " + u["temp"]["uid"], admin_kb())
+            return
+
+        if low in ("create giveaway", "\U0001F381 create giveaway"):
+            u["step"] = "ga_prize"
+            save_db()
+            t = "\U0001F381 <b>Create Giveaway</b>\n" + LINE + "\n\n"
+            t += "Send the <b>prize amount</b> in rupees.\n\n"
+            t += "Users will get a math question.\n"
+            t += "Correct = prize. Wrong = miss."
+            await send(cid, t, admin_kb())
+            return
+        if u["step"] == "ga_prize":
+            try:
+                prize = float(cmd)
+            except Exception:
+                await send(cid, "\u274C Invalid amount.", admin_kb())
+                return
+            for g in DB["giveaways"]:
+                g["active"] = False
+            DB["giveaways"].append({
+                "id": len(DB["giveaways"]) + 1,
+                "prize": prize,
+                "active": True,
+                "created": datetime.now().strftime("%Y-%m-%d %H:%M")
+            })
+            u["step"] = "menu"
+            save_db()
+            t = "\u2705 <b>Giveaway Created!</b>\n" + LINE + "\n\n"
+            t += "\U0001F4B0 Prize: Rs" + str(prize) + "\n\n"
+            t += "Users can now tap <b>Giveaway</b> and solve the math."
+            await send(cid, t, admin_kb())
+            for uid2 in list(DB["users"].keys()):
+                try:
+                    await send(int(uid2), "\U0001F381 <b>NEW GIVEAWAY!</b>\n" + LINE + "\n\n\U0001F4B0 Prize: Rs" + str(prize) + "\n\nTap <b>Giveaway</b> to play!")
+                except Exception:
+                    pass
+            return
+
+        if low in ("stats", "\U0001F4CA stats"):
+            stock = len([a for a in DB["accounts"] if not a.get("sold")])
+            sold = len([a for a in DB["accounts"] if a.get("sold")])
+            rev = sum(a.get("price", 0) for a in DB["accounts"] if a.get("sold"))
+            t = "\U0001F4CA <b>Stats</b>\n" + LINE + "\n\n"
+            t += "\U0001F465 Users: " + str(len(DB["users"])) + "\n"
+            t += "\U0001F4E6 Total: " + str(len(DB["accounts"])) + "\n"
+            t += "\U0001F7E2 Stock: " + str(stock) + "\n"
+            t += "\U0001F534 Sold: " + str(sold) + "\n"
+            t += "\U0001F4B0 Revenue: Rs" + str(round(rev, 2)) + "\n"
+            t += "\U0001F4B8 Pending: " + str(len(DB["pending"]))
+            await send(cid, t, admin_kb())
+            return
+
+        if low in ("broadcast", "\U0001F4E3 broadcast"):
+            u["step"] = "bc"
+            save_db()
+            await send(cid, "\U0001F4E3 Send message to broadcast.", admin_kb())
+            return
+        if u["step"] == "bc":
+            ok = 0
+            fail = 0
+            for uid2 in list(DB["users"].keys()):
+                try:
+                    await send(int(uid2), cmd)
+                    ok += 1
+                except Exception:
+                    fail += 1
+            u["step"] = "menu"
+            save_db()
+            await send(cid, "\u2705 Sent " + str(ok) + " Failed " + str(fail), admin_kb())
+            return
+
+    await send(cid, "Unknown command. Use buttons.", kb)
+
+
+async def poll():
+    offset = 0
+    while True:
+        try:
+            r = await api("getUpdates", offset=offset, timeout=25)
+            if r.get("ok"):
+                for up in r["result"]:
+                    offset = up["update_id"] + 1
+                    asyncio.create_task(handle(up))
+        except Exception as e:
+            print("poll err", e)
+            await asyncio.sleep(3)
+
+
+async def main():
+    global HTTP
+    HTTP = aiohttp.ClientSession()
+    print("=== BOT STARTED ===")
+    await start_userbots()
+    print("=== POLLING ===")
+    await poll()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
