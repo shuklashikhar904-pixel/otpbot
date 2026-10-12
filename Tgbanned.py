@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NIK Report Bot — multi-user premium telegram report automation
+DADDY Report Bot — multi-user premium telegram report automation
 run: python3 app.py
 """
 
