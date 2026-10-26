@@ -74,7 +74,7 @@ SUPER_ADMIN_LINK = "https://t.me/deathalive07"
 SUPER_ADMINS = [8646237754]
 
 BOT_TOKEN = "8961489153:AAHxvKlWUKXd8xxp0M06CkwEAv2MosQOOnc"
-LOG_CHANNEL_ID = -1003799923110
+LOG_CHANNEL_ID = -1004105892580
 
 _DATA_FILE = "blast_data.json"
 _VERSION = "v3.2-PREMIUM"
@@ -90,9 +90,9 @@ SPEED_DEFAULT = SPEED_MEDIUM
 # ⚠️ REPLACE these "id" values with REAL numeric chat IDs (-100...) after adding bot as admin.
 # Links stay as given by Dotbhai; check_membership uses the numeric id.
 FORCE_JOIN_CHANNELS = [
-    {"id": -1000000000001, "link": "https://t.me/trustmebaby07", "title": "Trust Me Baby", "required": True},
-    {"id": -1000000000002, "link": "https://t.me/trusteddealers_07", "title": "Trusted Dealers", "required": True},
-    {"id": -1000000000003, "link": "https://t.me/trusteddealers07", "title": "Trusted Dealers 07", "required": True},
+    {"id": -1004105892580, "link": "https://t.me/trustmebaby07", "title": "Trust Me Baby", "required": True},
+    {"id": -1004459303528, "link": "https://t.me/trusteddealers_07", "title": "Trusted Dealers", "required": True},
+    {"id": -1004298605082, "link": "https://t.me/trusteddealers07", "title": "Trusted Dealers 07", "required": True},
 ]
 
 async def send_fire_effect_private(bot: Bot, chat_id: int):
