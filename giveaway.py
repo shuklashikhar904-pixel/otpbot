@@ -11,18 +11,16 @@ from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 
 # --- CONFIGURATION ---
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE" # Get from BotFather
+BOT_TOKEN = "9121282494:AAHMKOrwCINXTmxEPshuKV-hXu2UKhwCEo8"
 OWNER_ID = 8646237754
-BOT_USERNAME = "YourBotUsername" # Put your bot's username here without the @ (e.g. "MyReferBot")
+BOT_USERNAME = "@idgiveaway07bot"
 
 # API CREDENTIALS FROM YOUR SCREENSHOT
 API_ID = 34540299
 API_HASH = "ed6fec574eb38bd1d60facca6ea360e2"
 
 DEFAULT_CHANNELS = [
-    "https://t.me/trusteddealers07",
-    "https://t.me/trustmebaby07",
-    "https://t.me/trusteddealers_07",
+    "https://t.me/trusteddealers07"
     "https://t.me/giveawaypower"
 ]
 
